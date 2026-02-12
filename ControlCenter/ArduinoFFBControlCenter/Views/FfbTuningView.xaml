@@ -1,0 +1,238 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.FfbTuningView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="12">
+            <TextBlock Text="{Binding SerialConfigNotice}" Foreground="{StaticResource MutedText}" />
+
+            <TabControl>
+                <TabItem Header="Basic">
+                    <StackPanel Margin="0,12,0,0" helpers:PanelSpacing.Spacing="12">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Overall Strength" FontSize="16" FontWeight="SemiBold" />
+                                <TextBlock Text="Safety cap is enabled in Beginner Mode. Hold to unlock high strength." Foreground="{StaticResource MutedText}" Margin="0,4,0,8" />
+                                <Slider Minimum="0" Maximum="{Binding StrengthMax}" Value="{Binding GeneralGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                <ProgressBar Height="6" Value="{Binding StrengthUnlockProgress}" Maximum="1" Margin="0,6,0,0" />
+                                <Button x:Name="UnlockStrengthButton" Content="Hold to Unlock High Strength" Margin="0,8,0,0" IsEnabled="{Binding CanUseSerialConfig}"
+                                        PreviewMouseLeftButtonDown="UnlockStrength_OnMouseDown"
+                                        PreviewMouseLeftButtonUp="UnlockStrength_OnMouseUp"
+                                        MouseLeave="UnlockStrength_OnMouseUp" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Mechanical Damping Ratio" FontSize="16" FontWeight="SemiBold" />
+                                <Slider Minimum="0" Maximum="100" Value="{Binding MechanicalDampingRatio}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                <TextBlock Text="Applies a balanced blend of damping, friction, and inertia." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Steering Intensity" FontSize="16" FontWeight="SemiBold" />
+                                <TextBlock Text="Second-stage scale for overall feel." Foreground="{StaticResource MutedText}" Margin="0,4,0,8" />
+                                <Slider Minimum="50" Maximum="150" Value="{Binding SteeringScale}" IsEnabled="{Binding CanUseSerialConfig}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Core Feel" FontSize="16" FontWeight="SemiBold" />
+                                <UniformGrid Columns="2" Margin="0,10,0,0">
+                                    <StackPanel Margin="0,0,12,12">
+                                        <TextBlock Text="Spring" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding SpringGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Damper" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding DamperGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,12">
+                                        <TextBlock Text="Friction" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding FrictionGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Inertia" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding InertiaGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Centering" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding CenterGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,0">
+                                        <TextBlock Text="Endstop" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding StopGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Live Response Preview" FontSize="16" FontWeight="SemiBold" />
+                                <TextBlock Text="Preview only (not a device measurement)" Foreground="{StaticResource MutedText}" Margin="0,4,0,8" />
+                                <Viewbox Height="160">
+                                    <Canvas Width="100" Height="100" Background="#0F151C">
+                                        <Polyline Points="{Binding PreviewPoints}" Stroke="{StaticResource AccentBrush}" StrokeThickness="2" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="Smoothing" Margin="0,6,0,0" />
+                                <Slider Minimum="0.05" Maximum="1.0" Value="{Binding PreviewSmoothing}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Extra" FontSize="16" FontWeight="SemiBold" />
+                                <UniformGrid Columns="2" Margin="0,10,0,0">
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Min Torque" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding MinTorque}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,0">
+                                        <TextBlock Text="Min Force Boost" />
+                                        <Slider Minimum="0" Maximum="50" Value="{Binding MinForceBoost}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                        <TextBlock Text="Adds a small boost near center (profile-only unless firmware supports)." Foreground="{StaticResource MutedText}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                            <Button Content="Load From Device" Command="{Binding LoadFromDeviceCommand}" IsEnabled="{Binding CanUseSerialConfig}" />
+                            <Button Content="Apply" Command="{Binding ApplyCommand}" Style="{StaticResource AccentButton}" IsEnabled="{Binding CanUseSerialConfig}" />
+                            <Button Content="Save to EEPROM" Command="{Binding SaveToDeviceCommand}" IsEnabled="{Binding CanSaveToEeprom}" />
+                            <Button Content="Restore Previous" Command="{Binding RestorePreviousCommand}" IsEnabled="{Binding CanRestoreBackup}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding EepromNotice}" Foreground="{StaticResource MutedText}" />
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem Header="Advanced" IsEnabled="{Binding AdvancedEnabled}">
+                    <StackPanel Margin="0,12,0,0" helpers:PanelSpacing.Spacing="12">
+                        <TextBlock Text="{Binding AdvancedNotice}" Foreground="{StaticResource MutedText}" />
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Effect Scaling" FontSize="16" FontWeight="SemiBold" />
+                                <UniformGrid Columns="2" Margin="0,10,0,0">
+                                    <StackPanel Margin="0,0,12,12">
+                                        <TextBlock Text="Overall" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding GeneralGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Constant" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding ConstantGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,12">
+                                        <TextBlock Text="Periodic" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding PeriodicGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Spring" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding SpringGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,12">
+                                        <TextBlock Text="Damper" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding DamperGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Friction" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding FrictionGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Inertia" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding InertiaGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,0">
+                                        <TextBlock Text="Endstop" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding StopGain}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Filters &amp; Limits" FontSize="16" FontWeight="SemiBold" />
+                                <UniformGrid Columns="2" Margin="0,10,0,0">
+                                    <StackPanel Margin="0,0,12,12">
+                                        <TextBlock Text="Slew Rate" />
+                                        <Slider Minimum="0" Maximum="100" Value="{Binding SlewRate}" IsEnabled="{Binding AdvancedSupported}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Smoothing" />
+                                        <Slider Minimum="0" Maximum="100" Value="{Binding Smoothing}" IsEnabled="{Binding AdvancedSupported}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,12">
+                                        <TextBlock Text="Notch Filter" />
+                                        <Slider Minimum="0" Maximum="100" Value="{Binding NotchFilter}" IsEnabled="{Binding AdvancedSupported}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Low-pass Filter" />
+                                        <Slider Minimum="0" Maximum="100" Value="{Binding LowPassFilter}" IsEnabled="{Binding AdvancedSupported}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="Soft Lock Strength" />
+                                        <Slider Minimum="0" Maximum="200" Value="{Binding SoftLockStrength}" IsEnabled="{Binding AdvancedSupported}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,0">
+                                        <TextBlock Text="Soft Lock Range" />
+                                        <Slider Minimum="0" Maximum="1800" Value="{Binding SoftLockRange}" IsEnabled="{Binding AdvancedSupported}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                                    <CheckBox Content="Oscillation Guard" IsChecked="{Binding OscillationGuardEnabled}" IsEnabled="{Binding AdvancedSupported}" />
+                                    <TextBlock Text="(auto damping boost)" Foreground="{StaticResource MutedText}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                            <Button Content="Load From Device" Command="{Binding LoadFromDeviceCommand}" IsEnabled="{Binding CanUseSerialConfig}" />
+                            <Button Content="Apply" Command="{Binding ApplyCommand}" Style="{StaticResource AccentButton}" IsEnabled="{Binding CanUseSerialConfig}" />
+                            <Button Content="Save to EEPROM" Command="{Binding SaveToDeviceCommand}" IsEnabled="{Binding CanSaveToEeprom}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding EepromNotice}" Foreground="{StaticResource MutedText}" />
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem Header="Curve">
+                    <StackPanel Margin="0,12,0,0" helpers:PanelSpacing.Spacing="12">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="FFB Curve Editor" FontSize="16" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                                    <TextBlock Text="Type" VerticalAlignment="Center" />
+                                    <ComboBox Width="160" ItemsSource="{Binding CurveTypeOptions}" SelectedItem="{Binding CurveType}" />
+                                    <TextBlock Text="Bias" VerticalAlignment="Center" />
+                                    <Slider Minimum="0.1" Maximum="0.9" Value="{Binding CurveBias}" Width="160" />
+                                </StackPanel>
+                                <StackPanel Margin="0,8,0,0" Visibility="{Binding IsCustomCurve, Converter={StaticResource BoolToVisibility}}">
+                                    <TextBlock Text="Custom Points (Y values at 25%, 50%, 75%)" Foreground="{StaticResource MutedText}" />
+                                    <UniformGrid Columns="3" Margin="0,6,0,0">
+                                        <Slider Minimum="0" Maximum="1" Value="{Binding CurveCustomP1}" />
+                                        <Slider Minimum="0" Maximum="1" Value="{Binding CurveCustomP2}" />
+                                        <Slider Minimum="0" Maximum="1" Value="{Binding CurveCustomP3}" />
+                                    </UniformGrid>
+                                </StackPanel>
+                                <Viewbox Height="200" Margin="0,12,0,0">
+                                    <Canvas Width="100" Height="100" Background="#0F151C">
+                                        <Polyline Points="{Binding CurvePoints}" Stroke="{StaticResource AccentBrush}" StrokeThickness="2" />
+                                    </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="{Binding CurveNotice}" Foreground="{StaticResource MutedText}" Margin="0,8,0,0" />
+                                <Button Content="Apply Curve" IsEnabled="{Binding CanApplyCurve}" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+
+
+

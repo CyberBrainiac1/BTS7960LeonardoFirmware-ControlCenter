@@ -1,0 +1,49 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.PhoneDashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="16">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Phone Dashboard" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Serve a local dashboard to your phone over Wi-Fi." Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    <TextBlock Text="LAN-only by default. Firewall may prompt on first start." Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Server Settings" FontSize="16" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12" Margin="0,8,0,0">
+                        <CheckBox Content="Enable Dashboard" IsChecked="{Binding IsEnabled}" />
+                        <TextBlock Text="Port" VerticalAlignment="Center" />
+                        <TextBox Width="80" Text="{Binding Port}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12" Margin="0,8,0,0">
+                        <CheckBox Content="Require PIN" IsChecked="{Binding RequirePin}" />
+                        <TextBlock Text="PIN" VerticalAlignment="Center" />
+                        <TextBox Width="120" Text="{Binding Pin}" />
+                        <Button Content="Generate PIN" Command="{Binding GeneratePinCommand}" />
+                    </StackPanel>
+                    <CheckBox Content="Advanced Remote Control (unsafe)" IsChecked="{Binding AdvancedRemote}" Margin="0,8,0,0" />
+                    <Button Content="Apply" Command="{Binding ApplyCommand}" Style="{StaticResource AccentButton}" Margin="0,12,0,0" />
+                    <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Open on Phone" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="LAN IP" Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    <TextBlock Text="{Binding LanIp}" FontSize="18" FontWeight="Bold" />
+                    <TextBlock Text="URL" Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    <TextBlock Text="{Binding Url}" TextWrapping="Wrap" />
+                    <Image Width="200" Height="200" Margin="0,12,0,0" Source="{Binding QrCode}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+
+

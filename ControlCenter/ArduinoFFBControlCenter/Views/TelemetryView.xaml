@@ -1,0 +1,74 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.TelemetryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <StackPanel Margin="24" helpers:PanelSpacing.Spacing="12">
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                    <TextBlock Text="Telemetry" FontSize="16" FontWeight="SemiBold" />
+                    <Button Content="Export Last 60s CSV" Command="{Binding ExportLast60sCommand}" IsEnabled="{Binding CanShowTelemetry}" />
+                </StackPanel>
+                <TextBlock Text="{Binding TelemetryNotice}" Foreground="{StaticResource MutedText}" Margin="0,6,0,8" />
+                <TextBlock Text="{Binding HealthSummary}" Foreground="{StaticResource MutedText}" Margin="0,0,0,8" />
+                <Grid IsEnabled="{Binding CanShowTelemetry}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="Angle" />
+                        <Viewbox Height="200">
+                            <Canvas Width="100" Height="100" Background="#0F151C">
+                                <Polyline Points="{Binding AnglePoints}" Stroke="{StaticResource Accent2}" StrokeThickness="2" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <TextBlock Text="Torque Command" />
+                        <Viewbox Height="200">
+                            <Canvas Width="100" Height="100" Background="#0F151C">
+                                <Polyline Points="{Binding TorquePoints}" Stroke="{StaticResource AccentBrush}" StrokeThickness="2" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                </Grid>
+                <Grid Margin="0,12,0,0" IsEnabled="{Binding CanShowTelemetry}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="Velocity" />
+                        <Viewbox Height="160">
+                            <Canvas Width="100" Height="100" Background="#0F151C">
+                                <Polyline Points="{Binding VelocityPoints}" Stroke="{StaticResource AccentBrush}" StrokeThickness="2" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <TextBlock Text="Loop dt (ms)" />
+                        <Viewbox Height="160">
+                            <Canvas Width="100" Height="100" Background="#0F151C">
+                                <Polyline Points="{Binding LoopDtPoints}" Stroke="{StaticResource Accent2}" StrokeThickness="2" />
+                            </Canvas>
+                        </Viewbox>
+                    </StackPanel>
+                </Grid>
+                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12" Margin="0,12,0,0">
+                    <TextBlock Text="{Binding ClippingPercent, StringFormat=Clipping {0:0}%}" Foreground="{StaticResource MutedText}" />
+                    <TextBlock Text="{Binding SampleRateHz, StringFormat=Sample {0:0}Hz}" Foreground="{StaticResource MutedText}" />
+                    <TextBlock Text="{Binding TorqueRateHz, StringFormat=Torque {0:0}Hz}" Foreground="{StaticResource MutedText}" />
+                    <TextBlock Text="{Binding PacketLossPercent, StringFormat=Packet Loss {0:0}%}" Foreground="{StaticResource MutedText}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12" Margin="0,8,0,0">
+                    <TextBlock Text="Oscillation detected" Foreground="OrangeRed" Visibility="{Binding OscillationDetected, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock Text="Encoder noise detected" Foreground="OrangeRed" Visibility="{Binding NoiseDetected, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+                <TextBlock Text="{Binding Insights}" Foreground="{StaticResource MutedText}" Margin="0,6,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
+
+

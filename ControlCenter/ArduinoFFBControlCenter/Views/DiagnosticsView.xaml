@@ -1,0 +1,55 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.DiagnosticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <StackPanel Margin="24" helpers:PanelSpacing.Spacing="12">
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Diagnostics &amp; Support" FontSize="16" FontWeight="SemiBold" />
+                <Button Content="Export Support Bundle" Command="{Binding ExportSupportBundleCommand}" Style="{StaticResource AccentButton}" Margin="0,8,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Troubleshooting Wizard" FontSize="16" FontWeight="SemiBold" />
+                <ItemsControl ItemsSource="{Binding Troubleshooting}" Margin="0,8,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Steps}" Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Saved Wiring Summary" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding WiringSummary}" Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,6,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Log Console" FontSize="16" FontWeight="SemiBold" />
+                <ListBox ItemsSource="{Binding Logs}" Height="360" Margin="0,8,0,0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Foreground="{StaticResource MutedText}"><Run Text="{Binding Timestamp, StringFormat={}{0:HH:mm:ss}}" /><Run Text=" " /><Run Text="{Binding Level}" /><Run Text=" - " /><Run Text="{Binding Message}" /></TextBlock>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
+
+
+
+

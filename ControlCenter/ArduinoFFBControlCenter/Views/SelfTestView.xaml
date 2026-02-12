@@ -1,0 +1,27 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.SelfTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="12">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Self-Test / Pre-Flight" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Runs quick checks for encoder, buttons, and basic health." Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    <TextBlock Text="Keep hands clear during motor test. Turn wheel to endstops when prompted in the report." Foreground="{StaticResource MutedText}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                    <Button Content="Run Self-Test" Command="{Binding RunSelfTestCommand}" Style="{StaticResource AccentButton}" Margin="0,10,0,0" />
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Report" FontWeight="SemiBold" />
+                    <ListBox ItemsSource="{Binding ReportLines}" Height="200" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+
+

@@ -1,0 +1,129 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="16">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Connected Device" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding DataContext.DeviceSummary, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{StaticResource MutedText}" Margin="0,6,0,8" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" helpers:PanelSpacing.Spacing="4">
+                            <TextBlock Text="{Binding ProductName}" />
+                            <TextBlock Foreground="{StaticResource MutedText}">
+                                <Run Text="Firmware: " />
+                                <Run Text="{Binding FirmwareVersion}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}">
+                                <Run Text="INFO: " />
+                                <Run Text="{Binding InfoSupportText}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}">
+                                <Run Text="Update: " />
+                                <Run Text="{Binding DataContext.FirmwareUpdateStatus, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}">
+                                <Run Text="Last Flash: " />
+                                <Run Text="{Binding DataContext.LastFlashStatus, RelativeSource={RelativeSource AncestorType=Window}}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}">
+                                <Run Text="Calibration: " />
+                                <Run Text="{Binding CalibrationStatus}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}" TextWrapping="Wrap">
+                                <Run Text="{Binding CalibrationReason}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}">
+                                <Run Text="Save: " />
+                                <Run Text="{Binding SaveStatus}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" helpers:PanelSpacing.Spacing="4">
+                            <TextBlock>
+                                <Run Text="Port: " />
+                                <Run Text="{Binding Port}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}">
+                                <Run Text="VID/PID: " />
+                                <Run Text="{Binding VidPid}" />
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource MutedText}" TextWrapping="Wrap">
+                                <Run Text="Caps: " />
+                                <Run Text="{Binding CapabilitiesText}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <UniformGrid Columns="4" Rows="1" Margin="0,0,0,8">
+                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="Wheel Angle" Foreground="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding WheelAngle, StringFormat={}{0:0}}" FontSize="28" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="Torque Command" Foreground="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding TorqueCommand, StringFormat={}{0:0}}" FontSize="28" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="Clipping" Foreground="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding Clipping}" FontSize="28" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Telemetry Hz" Foreground="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding TelemetryRate, StringFormat={}{0:0}}" FontSize="28" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12">
+                <TextBlock Text="{Binding OscillationDetected, StringFormat=Oscillation: {0}}" Foreground="{StaticResource MutedText}" />
+            </StackPanel>
+
+            <UniformGrid Columns="3" Rows="4">
+                <Button Content="Setup Wizard" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="wizard" />
+                <Button Content="Calibration" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="calibration" />
+                <Button Content="FFB Settings" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="ffb" />
+                <Button Content="Steering" Style="{StaticResource PrimaryButton}" Margin="0,0,0,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="steering" />
+                <Button Content="Pedals" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="pedals" />
+                <Button Content="Buttons" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="buttons" />
+                <Button Content="Profiles" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="profiles" />
+                <Button Content="Firmware" Style="{StaticResource PrimaryButton}" Margin="0,0,0,12"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="firmware" />
+                <Button Content="Telemetry" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="telemetry" />
+                <Button Content="Snapshots" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="snapshots" />
+                <Button Content="Self-Test" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="selftest" />
+                <Button Content="Phone Dashboard" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="phone" />
+                <Button Content="Lab Tools" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="lab" />
+                <Button Content="Diagnostics" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="diagnostics" />
+            </UniformGrid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+
+

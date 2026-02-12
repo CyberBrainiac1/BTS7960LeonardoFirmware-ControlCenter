@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34309.116
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F1D3E1F7-1F6D-4E7E-9D89-8B3E0F55F9E8}") = "ArduinoFFBControlCenter", "ArduinoFFBControlCenter\\ArduinoFFBControlCenter.csproj", "{A0C1B8D8-2A5D-4E2A-9B3E-5B58C8A7E65E}"
+EndProject
+Project("{F1D3E1F7-1F6D-4E7E-9D89-8B3E0F55F9E8}") = "ArduinoFFBControlCenter.Tests", "ArduinoFFBControlCenter.Tests\\ArduinoFFBControlCenter.Tests.csproj", "{650C8F7F-B294-467A-977E-28D58AE804A4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A0C1B8D8-2A5D-4E2A-9B3E-5B58C8A7E65E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0C1B8D8-2A5D-4E2A-9B3E-5B58C8A7E65E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0C1B8D8-2A5D-4E2A-9B3E-5B58C8A7E65E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0C1B8D8-2A5D-4E2A-9B3E-5B58C8A7E65E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{650C8F7F-B294-467A-977E-28D58AE804A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{650C8F7F-B294-467A-977E-28D58AE804A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{650C8F7F-B294-467A-977E-28D58AE804A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{650C8F7F-B294-467A-977E-28D58AE804A4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

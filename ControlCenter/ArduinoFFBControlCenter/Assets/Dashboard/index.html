@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Wheel Dashboard</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-title">Wheel Dashboard</div>
+        <div class="brand-sub">Arduino FFB Control Center</div>
+      </div>
+      <div class="status">
+        <div class="pill" id="conn-pill">Disconnected</div>
+        <div class="pill warn" id="cal-pill">Unknown</div>
+        <div class="pill" id="save-pill">Unknown</div>
+      </div>
+    </header>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="drive">Drive</button>
+      <button class="tab-btn" data-tab="ffb">FFB</button>
+      <button class="tab-btn" data-tab="diag">Diagnostics</button>
+      <button class="tab-btn" data-tab="layout">Layout</button>
+    </nav>
+
+    <section id="drive" class="tab active">
+      <div class="grid" id="drive-grid"></div>
+    </section>
+
+    <section id="ffb" class="tab">
+      <div class="card">
+        <div class="card-title">Safe Controls</div>
+        <div class="card-sub">Capped ranges. Advanced controls are disabled by default.</div>
+        <div class="slider-group">
+          <label>Overall Strength <span id="strength-val">0</span></label>
+          <input type="range" id="strength-slider" min="0" max="120" value="0" />
+        </div>
+        <div class="slider-group">
+          <label>Damping <span id="damping-val">0</span></label>
+          <input type="range" id="damping-slider" min="0" max="120" value="0" />
+        </div>
+        <div class="slider-group">
+          <label>Friction <span id="friction-val">0</span></label>
+          <input type="range" id="friction-slider" min="0" max="120" value="0" />
+        </div>
+        <div class="slider-group">
+          <label>Inertia <span id="inertia-val">0</span></label>
+          <input type="range" id="inertia-slider" min="0" max="120" value="0" />
+        </div>
+        <div class="actions">
+          <button id="apply-tuning" class="primary">Apply</button>
+          <div class="hint" id="ffb-lock-hint"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Profiles</div>
+        <div class="card-sub">Apply a saved profile to the wheel.</div>
+        <div class="row">
+          <select id="profile-select"></select>
+          <button id="apply-profile" class="secondary">Apply Profile</button>
+        </div>
+      </div>
+
+      <div class="grid" id="ffb-grid"></div>
+    </section>
+
+    <section id="diag" class="tab">
+      <div class="card">
+        <div class="card-title">Diagnostics Summary</div>
+        <div class="diag-grid">
+          <div><span>Telemetry Hz</span><strong id="diag-rate">0</strong></div>
+          <div><span>Loop dt</span><strong id="diag-loopdt">0</strong></div>
+          <div><span>Clipping</span><strong id="diag-clip">0%</strong></div>
+          <div><span>Sim Provider</span><strong id="diag-sim">None</strong></div>
+        </div>
+      </div>
+      <div class="grid" id="diag-grid"></div>
+    </section>
+
+    <section id="layout" class="tab">
+      <div class="card">
+        <div class="card-title">Layout Editor</div>
+        <div class="card-sub">Arrange widgets for each page. Save to apply on this device.</div>
+        <div class="row">
+          <label>Page</label>
+          <select id="layout-page"></select>
+          <button id="save-layout" class="primary">Save Layout</button>
+        </div>
+        <div class="row">
+          <label>Units</label>
+          <select id="unit-speed">
+            <option value="kph">km/h</option>
+            <option value="mph">mph</option>
+          </select>
+          <select id="unit-angle">
+            <option value="deg">deg</option>
+            <option value="norm">normalized</option>
+          </select>
+        </div>
+        <div id="widget-list" class="widget-list"></div>
+        <div class="row">
+          <select id="new-widget-type">
+            <option value="numeric">Numeric</option>
+            <option value="bar">Bar</option>
+            <option value="graph">Graph</option>
+            <option value="status">Status</option>
+          </select>
+          <select id="new-widget-field"></select>
+          <input type="text" id="new-widget-label" placeholder="Label" />
+          <button id="add-widget" class="secondary">Add Widget</button>
+        </div>
+        <div class="row">
+          <button id="export-layout" class="secondary">Export Layout</button>
+          <label class="file-btn">
+            Import Layout
+            <input type="file" id="import-layout" accept=".json" />
+          </label>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="pin-modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="card-title">Enter PIN</div>
+      <div class="card-sub">This dashboard is locked for safety.</div>
+      <input type="password" id="pin-input" placeholder="6-digit PIN" />
+      <button id="pin-submit" class="primary">Unlock</button>
+      <div id="pin-error" class="hint"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

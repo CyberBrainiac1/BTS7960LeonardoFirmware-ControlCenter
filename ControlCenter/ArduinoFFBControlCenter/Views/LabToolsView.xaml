@@ -1,0 +1,81 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.LabToolsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="12">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="FFB Test Lab" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding TestStatus}" Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding IsFfbAttached, StringFormat=FFB Attached: {0}}" Foreground="{StaticResource MutedText}" />
+                    <TextBlock Text="{Binding CalibrationNotice}" Foreground="{StaticResource MutedText}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                    <CheckBox Content="Bypass calibration warning (unsafe)" IsChecked="{Binding BypassCalibrationWarning}" Margin="0,4,0,0" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                        <Button Content="Attach FFB Device" Command="{Binding AttachFfbDeviceCommand}" />
+                        <Button x:Name="ArmButton" Content="ARM TEST (Hold 2s)" />
+                        <ProgressBar Height="6" Width="120" Value="{Binding ArmProgress}" Maximum="1" />
+                        <Button Content="Stop All" Command="{Binding StopAllCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Effect Tester" FontSize="16" FontWeight="SemiBold" />
+                    <UniformGrid Columns="2" Margin="0,8,0,0">
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Magnitude" />
+                            <Slider Minimum="0" Maximum="10000" Value="{Binding TestMagnitude}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Sine Period (ms)" />
+                            <Slider Minimum="200" Maximum="3000" Value="{Binding TestFrequencyMs}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Text="Spring Strength" />
+                            <Slider Minimum="0" Maximum="10000" Value="{Binding SpringStrength}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,0">
+                            <TextBlock Text="Damper Strength" />
+                            <Slider Minimum="0" Maximum="10000" Value="{Binding DamperStrength}" />
+                        </StackPanel>
+                    </UniformGrid>
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                        <Button Content="Constant" Command="{Binding TestConstantCommand}" IsEnabled="{Binding CanRunTests}" />
+                        <Button Content="Sine" Command="{Binding TestSineCommand}" IsEnabled="{Binding CanRunTests}" />
+                        <Button Content="Spring" Command="{Binding TestSpringCommand}" IsEnabled="{Binding CanRunTests}" />
+                        <Button Content="Damper" Command="{Binding TestDamperCommand}" IsEnabled="{Binding CanRunTests}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Input Tester" FontSize="16" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12">
+                        <TextBlock Text="{Binding WheelAngle, StringFormat=Wheel Angle: {0}}" Foreground="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding InputLatencyMs, StringFormat=Latency: {0:0}ms}" Foreground="{StaticResource MutedText}" />
+                        <TextBlock Text="{Binding NoiseStatus}" Foreground="{StaticResource MutedText}" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding ButtonStates}" Margin="0,8,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="20" Height="20" Margin="2"
+                                            Background="{Binding IsPressed, Converter={StaticResource BoolToBrush}}"
+                                            BorderBrush="{StaticResource CardBorder}" BorderThickness="1" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+
+

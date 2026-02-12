@@ -1,0 +1,86 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.PedalsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="3*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Card}">
+                <StackPanel helpers:PanelSpacing.Spacing="10">
+                    <TextBlock Text="Pedal Wiring" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding WiringSummary}" Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                    <TextBlock Text="Pedals are not configured. Run the Setup Wizard to add pedal wiring." Foreground="{StaticResource WarnBrush}" TextWrapping="Wrap"
+                               Visibility="{Binding HasPedals, Converter={StaticResource InverseBool}}" />
+                    <Separator Margin="0,6,0,6" />
+                    <TextBlock Text="Axis Mapping" FontSize="16" FontWeight="SemiBold" />
+
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" IsEnabled="{Binding HasPedals}">
+                        <TextBlock Text="Throttle" Width="80" VerticalAlignment="Center" />
+                        <ComboBox Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding ThrottleAxis}" />
+                        <Button Content="Detect" Command="{Binding DetectThrottleCommand}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" IsEnabled="{Binding HasPedals}">
+                        <TextBlock Text="Brake" Width="80" VerticalAlignment="Center" />
+                        <ComboBox Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding BrakeAxis}" />
+                        <Button Content="Detect" Command="{Binding DetectBrakeCommand}" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" IsEnabled="{Binding HasPedals}">
+                        <TextBlock Text="Clutch" Width="80" VerticalAlignment="Center" />
+                        <ComboBox Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding ClutchAxis}" />
+                        <Button Content="Detect" Command="{Binding DetectClutchCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedText}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="16,0,0,0" IsEnabled="{Binding HasPedals}">
+                <StackPanel helpers:PanelSpacing.Spacing="10">
+                    <TextBlock Text="Live Pedal Input" FontSize="16" FontWeight="SemiBold" />
+
+                    <StackPanel>
+                        <TextBlock Text="Throttle" />
+                        <ProgressBar Height="8" Value="{Binding ThrottleValue}" Maximum="1" />
+                        <TextBlock Text="{Binding ThrottleRaw, StringFormat=Raw: {0}}" Foreground="{StaticResource MutedText}" />
+                        <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="6" Margin="0,4,0,0">
+                            <Button Content="Set Min" Command="{Binding SetThrottleMinCommand}" />
+                            <Button Content="Set Max" Command="{Binding SetThrottleMaxCommand}" />
+                            <CheckBox Content="Invert" IsChecked="{Binding ThrottleInverted}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Text="Brake" />
+                        <ProgressBar Height="8" Value="{Binding BrakeValue}" Maximum="1" />
+                        <TextBlock Text="{Binding BrakeRaw, StringFormat=Raw: {0}}" Foreground="{StaticResource MutedText}" />
+                        <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="6" Margin="0,4,0,0">
+                            <Button Content="Set Min" Command="{Binding SetBrakeMinCommand}" />
+                            <Button Content="Set Max" Command="{Binding SetBrakeMaxCommand}" />
+                            <CheckBox Content="Invert" IsChecked="{Binding BrakeInverted}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Text="Clutch" />
+                        <ProgressBar Height="8" Value="{Binding ClutchValue}" Maximum="1" />
+                        <TextBlock Text="{Binding ClutchRaw, StringFormat=Raw: {0}}" Foreground="{StaticResource MutedText}" />
+                        <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="6" Margin="0,4,0,0">
+                            <Button Content="Set Min" Command="{Binding SetClutchMinCommand}" />
+                            <Button Content="Set Max" Command="{Binding SetClutchMaxCommand}" />
+                            <CheckBox Content="Invert" IsChecked="{Binding ClutchInverted}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Button Content="Reset Calibration" Command="{Binding ResetCalibrationCommand}" Margin="0,8,0,0" />
+                    <TextBlock Text="Tip: release the pedal for Min, press fully for Max." Foreground="{StaticResource MutedText}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
+
+

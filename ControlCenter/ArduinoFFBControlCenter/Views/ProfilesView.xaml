@@ -1,0 +1,116 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.ProfilesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid Margin="24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="3*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Column="0" Grid.Row="0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Profiles" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding SerialConfigNotice}" Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" DisplayMemberPath="Name" Height="260" Margin="0,8,0,0" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                        <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+                        <Button Content="Apply Selected" Command="{Binding ApplySelectedCommand}" Style="{StaticResource AccentButton}" IsEnabled="{Binding CanUseSerialConfig}" />
+                        <Button Content="Export" Command="{Binding ExportSelectedCommand}" />
+                        <Button Content="Restore Defaults" Command="{Binding RestoreDefaultsCommand}" IsEnabled="{Binding CanUseSerialConfig}" />
+                    </StackPanel>
+                    <TextBlock Text="Apply updates the wheel temporarily. Use Save to Wheel on the FFB page for EEPROM." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    <CheckBox Content="Auto-apply last profile on connect" IsChecked="{Binding AutoApplyLastProfile}" Margin="0,8,0,0" />
+                    <CheckBox Content="Auto-switch by game exe" IsChecked="{Binding AutoSwitchEnabled}" Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding AutoSwitchStatus}" Foreground="{StaticResource MutedText}" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Grid.Row="0" Style="{StaticResource Card}" Margin="16,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="Create Profile" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Name" Margin="0,8,0,0" />
+                    <TextBox Text="{Binding NewProfileName}" />
+                    <TextBlock Text="Notes" Margin="0,8,0,0" />
+                    <TextBox Text="{Binding NewProfileNotes}" Height="80" AcceptsReturn="True" />
+                    <TextBlock Text="Game EXEs (optional, comma-separated)" Margin="0,8,0,0" />
+                    <TextBox Text="{Binding GameExecutables}" />
+                    <Button Content="Capture From Device" Command="{Binding CaptureFromDeviceCommand}" Style="{StaticResource AccentButton}" Margin="0,12,0,0" IsEnabled="{Binding CanUseSerialConfig}" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="0" Grid.Row="1" Style="{StaticResource Card}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Compare Profiles" FontSize="16" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                        <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding CompareLeft}" DisplayMemberPath="Name" Width="160" />
+                        <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding CompareRight}" DisplayMemberPath="Name" Width="160" />
+                        <Button Content="Compare" Command="{Binding CompareSelectedCommand}" />
+                    </StackPanel>
+                    <ListBox ItemsSource="{Binding DiffLines}" Height="180" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Grid.Row="1" Style="{StaticResource Card}" Margin="16,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="One-click Game Presets" FontSize="16" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding GamePresets}" SelectedItem="{Binding SelectedGamePreset}" DisplayMemberPath="Name" Margin="0,8,0,0" />
+                    <Button Content="Apply Preset" Command="{Binding ApplyGamePresetCommand}" Style="{StaticResource AccentButton}" Margin="0,8,0,0" IsEnabled="{Binding CanUseSerialConfig}" />
+                    <TextBlock Text="These are community baselines, not official." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource Card}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Profile Gallery (.wheelprofile)" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Import/export shareable wheel profiles with layout and settings." Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="3*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <ListBox ItemsSource="{Binding Gallery}" SelectedItem="{Binding SelectedGallery}" Height="180">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Manifest.Name}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Manifest.Description}" Foreground="{StaticResource MutedText}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                                <Button Content="Import" Command="{Binding ImportWheelProfileCommand}" />
+                                <Button Content="Apply" Command="{Binding ApplyGalleryCommand}" Style="{StaticResource AccentButton}" IsEnabled="{Binding CanUseSerialConfig}" />
+                                <Button Content="Delete" Command="{Binding DeleteGalleryCommand}" />
+                                <CheckBox Content="Include firmware hex" IsChecked="{Binding IncludeFirmwareInExport}" />
+                                <Button Content="Export Selected" Command="{Binding ExportSelectedCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                            <TextBlock Text="Import Warnings" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding ImportWarnings}" Margin="0,6,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Foreground="OrangeRed" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Diff Preview" FontWeight="SemiBold" Margin="0,8,0,0" />
+                            <ListBox ItemsSource="{Binding ImportDiffLines}" Height="120" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>
+
+

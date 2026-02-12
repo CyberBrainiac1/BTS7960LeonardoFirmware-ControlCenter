@@ -1,0 +1,184 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.SetupWizardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="12">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Setup Wizard" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding WizardStatus}" Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding WizardHint}" Foreground="{StaticResource MutedText}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=0}">
+                <StackPanel>
+                    <TextBlock Text="1) Arduino Leonardo Pin Mapping" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Choose which pins your BTS7960 and encoder are connected to." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" helpers:PanelSpacing.Spacing="8">
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <TextBlock Text="RPWM" Width="80" VerticalAlignment="Center" />
+                                <ComboBox Width="120" ItemsSource="{Binding PwmPins}" SelectedItem="{Binding RpwmPin}" />
+                                <TextBlock Text="LPWM" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="120" ItemsSource="{Binding PwmPins}" SelectedItem="{Binding LpwmPin}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <TextBlock Text="R_EN" Width="80" VerticalAlignment="Center" />
+                                <ComboBox Width="120" ItemsSource="{Binding DigitalPins}" SelectedItem="{Binding REnPin}" />
+                                <TextBlock Text="L_EN" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="120" ItemsSource="{Binding DigitalPins}" SelectedItem="{Binding LEnPin}" />
+                                <CheckBox Content="Use Enable Pins" IsChecked="{Binding UseEnablePins}" Margin="12,0,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <TextBlock Text="Encoder A" Width="80" VerticalAlignment="Center" />
+                                <ComboBox Width="120" ItemsSource="{Binding InterruptPins}" SelectedItem="{Binding EncoderAPin}" />
+                                <TextBlock Text="Encoder B" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="120" ItemsSource="{Binding InterruptPins}" SelectedItem="{Binding EncoderBPin}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <TextBlock Text="E-Stop" Width="80" VerticalAlignment="Center" />
+                                <ComboBox Width="120" ItemsSource="{Binding DigitalPins}" SelectedItem="{Binding EStopPin}" />
+                                <TextBlock Text="Button 1" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="120" ItemsSource="{Binding DigitalPins}" SelectedItem="{Binding Button1Pin}" />
+                                <TextBlock Text="Button 2" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="120" ItemsSource="{Binding DigitalPins}" SelectedItem="{Binding Button2Pin}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <TextBlock Text="Shifter X" Width="80" VerticalAlignment="Center" />
+                                <ComboBox Width="120" ItemsSource="{Binding AnalogPins}" SelectedItem="{Binding ShifterXPin}" />
+                                <TextBlock Text="Shifter Y" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="120" ItemsSource="{Binding AnalogPins}" SelectedItem="{Binding ShifterYPin}" />
+                            </StackPanel>
+                            <Button Content="Use My Wheel Developer Preset" Command="{Binding UseMyWheelPresetCommand}" Style="{StaticResource PrimaryButton}" Margin="0,8,0,0" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Padding="8" Background="{StaticResource CardBackground}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="10">
+                            <Image Source="Assets/Wizard/arduinoLeoPinout.jpg" Stretch="Uniform" />
+                        </Border>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding WiringWarnings}" Margin="0,8,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Foreground="OrangeRed" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=1}">
+                <StackPanel>
+                    <TextBlock Text="2) BTS7960 Wiring Confirmation" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Confirm motor wiring, power, and PWM mode." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" helpers:PanelSpacing.Spacing="8">
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <TextBlock Text="PWM Mode" Width="120" VerticalAlignment="Center" />
+                                <ComboBox Width="140" ItemsSource="{Binding PwmModes}" SelectedItem="{Binding PwmMode}" />
+                                <TextBlock Text="Logic Voltage" Width="120" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="100" ItemsSource="{Binding LogicVoltages}" SelectedItem="{Binding LogicVoltage}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <TextBlock Text="Motor +" Width="120" VerticalAlignment="Center" />
+                                <ComboBox Width="100" ItemsSource="{Binding MotorTerminals}" SelectedItem="{Binding MotorPlusTerminal}" />
+                                <TextBlock Text="Motor -" Width="120" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <ComboBox Width="100" ItemsSource="{Binding MotorTerminals}" SelectedItem="{Binding MotorMinusTerminal}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12">
+                                <CheckBox Content="Logic VCC connected" IsChecked="{Binding LogicVccConnected}" />
+                                <CheckBox Content="Logic GND connected" IsChecked="{Binding LogicGndConnected}" />
+                            </StackPanel>
+                            <CheckBox Content="Common ground between Arduino and motor power" IsChecked="{Binding CommonGround}" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Padding="8" Background="{StaticResource CardBackground}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="10">
+                            <Image Source="Assets/Wizard/bts7960_wiring_diagram.png" Stretch="Uniform" />
+                        </Border>
+                    </Grid>
+                    <TextBlock Text="Wiring Summary" FontWeight="SemiBold" Margin="0,10,0,0" />
+                    <TextBox Text="{Binding WiringSummary}" Height="120" AcceptsReturn="True" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
+                    <Button Content="Copy Summary" Command="{Binding CopyWiringSummaryCommand}" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=2}">
+                <StackPanel>
+                    <TextBlock Text="3) Pedals and Optional Inputs" FontSize="16" FontWeight="SemiBold" />
+                    <CheckBox Content="I have pedals connected" IsChecked="{Binding HasPedals}" Margin="0,6,0,0" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0" IsEnabled="{Binding HasPedals}">
+                        <TextBlock Text="Throttle" Width="80" VerticalAlignment="Center" />
+                        <ComboBox Width="120" ItemsSource="{Binding AnalogPins}" SelectedItem="{Binding ThrottlePin}" />
+                        <TextBlock Text="Brake" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                        <ComboBox Width="120" ItemsSource="{Binding AnalogPins}" SelectedItem="{Binding BrakePin}" />
+                        <TextBlock Text="Clutch" Width="80" VerticalAlignment="Center" Margin="12,0,0,0" />
+                        <ComboBox Width="120" ItemsSource="{Binding AnalogPins}" SelectedItem="{Binding ClutchPin}" />
+                    </StackPanel>
+                    <TextBlock Text="Pedal wiring is saved and reused for diagnostics and self-test." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=3}">
+                <StackPanel>
+                    <TextBlock Text="4) Detect Device + Select Firmware" FontSize="16" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
+                        <ComboBox Width="160" ItemsSource="{Binding Ports}" SelectedItem="{Binding SelectedPort}" />
+                        <Button Content="Detect Device" Command="{Binding DetectDeviceCommand}" />
+                    </StackPanel>
+                    <TextBlock Text="Recommended HEX" Margin="0,10,0,0" />
+                    <ComboBox ItemsSource="{Binding FirmwareOptions}" SelectedItem="{Binding SelectedFirmware}" DisplayMemberPath="Name" />
+                    <CheckBox Content="Advanced: Build custom firmware (Arduino CLI)" IsChecked="{Binding UseCustomBuild}" Margin="0,8,0,0" />
+                    <Button Content="Build Custom Firmware" Command="{Binding BuildCustomFirmwareCommand}" Margin="0,6,0,0" />
+                    <TextBlock Text="{Binding CustomBuildStatus}" Foreground="{StaticResource MutedText}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=4}">
+                <StackPanel>
+                    <TextBlock Text="5) Flash Firmware" FontSize="16" FontWeight="SemiBold" />
+                    <Button Content="Flash Firmware" Command="{Binding FlashFirmwareCommand}" Style="{StaticResource AccentButton}" Margin="0,8,0,0" />
+                    <TextBox Text="{Binding FlashLog}" Height="160" Margin="0,8,0,0" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Background="#0F151C" Foreground="#D7E3F3" BorderBrush="{StaticResource CardBorder}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=5}">
+                <StackPanel>
+                    <TextBlock Text="6) Calibration" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Center the wheel, verify direction, then set rotation in Steering page if needed. Test endstops/soft lock at low strength." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    <Button Content="Center Now" Command="{Binding CalibrateCommand}" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=6}">
+                <StackPanel>
+                    <TextBlock Text="7) Apply Baseline Preset" FontSize="16" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" DisplayMemberPath="Name" Margin="0,8,0,0" />
+                    <Button Content="Apply Preset" Command="{Binding ApplyPresetCommand}" Style="{StaticResource AccentButton}" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Visibility="{Binding StepIndex, Converter={StaticResource StepVisibility}, ConverterParameter=7}">
+                <StackPanel>
+                    <TextBlock Text="8) Save and Finish" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Saves to EEPROM and creates a local backup profile." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    <Button Content="Save Settings" Command="{Binding SaveAndFinishCommand}" Style="{StaticResource AccentButton}" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                <Button Content="Back" Command="{Binding BackCommand}" />
+                <Button Content="Next" Command="{Binding NextCommand}" Style="{StaticResource PrimaryButton}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+
+
+
