@@ -3,6 +3,10 @@ using System.Linq;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// Samples wheel telemetry (HID angle + serial torque lines) at a fixed cadence.
+/// Also computes rolling health stats for UI indicators.
+/// </summary>
 public class TelemetryService
 {
     private readonly HidWheelService _hid;
@@ -53,6 +57,7 @@ public class TelemetryService
 
     public void Start()
     {
+        // Idempotent start.
         if (_cts != null)
         {
             return;
@@ -74,6 +79,7 @@ public class TelemetryService
         _torqueLineCount++;
     }
 
+    // Main sampler loop (~5ms cadence).
     private async Task SampleLoopAsync(CancellationToken ct)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -132,6 +138,7 @@ public class TelemetryService
         }
     }
 
+    // Computes per-second stats from recent sample window.
     private void UpdateStats()
     {
         TelemetrySample[] window;

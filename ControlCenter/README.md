@@ -1,179 +1,229 @@
-# Wheel Control Center (Windows)
+# Arduino FFB Control Center (Windows)
 
-A Windows-only Control Center for DIY FFB wheels running **ranenbg/Arduino-FFB-wheel** firmware on **Arduino Leonardo (ATmega32U4)** with BTS7960 motor drivers.
+This folder contains the Windows app for DIY FFB wheels based on:
+- Arduino Leonardo (ATmega32U4)
+- ranenbg/Arduino-FFB-wheel firmware workflow (precompiled HEX)
+- BTS7960 motor driver
+- wheel encoder + optional pedals
 
-## Key Assumptions (per firmware workflow)
-- Firmware is flashed from **precompiled HEX** files because flash is limited and option letters are baked into the build.
-- Configuration is through **CDC serial** (RS232 commands). The legacy GUI (`wheel_control.exe`) remains compatible.
-- Optional: a minimal `INFO` command (firmware patch in `FirmwareExtras/`) enables richer capability detection.
+## 1) What This App Does
+The app is an end-to-end control center that handles:
+- firmware flashing (Leonardo-safe bootloader flow)
+- serial configuration + EEPROM save (when firmware supports it)
+- calibration wizard + verification
+- setup wizard with wiring validation
+- profiles + timeline snapshots + rollback
+- live telemetry + hardware mirror dashboard
+- local phone dashboard (LAN)
+- local Ollama AI side-view (optional)
 
-## Beginner Mode (default)
-- Safety capped strength with **hold-to-unlock** for high torque.
-- Setup Wizard (detect → flash → calibrate → preset → save).
-- Simplified sliders with explanations.
-- Calibration status and save status on Home.
+## 2) Core Firmware Rules (Important)
+This app follows Arduino-FFB-wheel assumptions:
+- normal users flash precompiled `.hex` files
+- firmware features are encoded in version option letters
+- serial commands and capabilities vary by build
 
-## Advanced Mode
-- Toggle **Advanced Mode** in the top bar (Beginner off).
-- Full effect scaling controls.
-- Curve editor (stored in profiles; apply requires firmware support).
-- Lab Tools: built-in effect tester + input tester.
+The UI is capability-driven:
+- if firmware supports a feature -> control is enabled
+- if not -> control is shown disabled with explanation
 
-## Setup Wizard (Wiring + Pedals)
-The wizard now collects wiring info to reduce mistakes:
-- Arduino pin mapping for BTS7960 and encoder
-- BTS7960 wiring confirmation (PWM mode, logic voltage, common ground)
-- Pedal wiring (throttle/brake/clutch) if present
+## 3) App Modes
+- Beginner Mode: safer defaults and easier flow
+- Advanced Mode: full controls
+- Demo Mode: no hardware required, synthetic data
 
-The wiring summary is saved and reused in Diagnostics and Self-Test.
+Note: Kid mode was removed from the visible UX and forced off in runtime.
 
-## Pedals
-The **Pedals** page lets you:
-- Map HID axes to throttle/brake/clutch
-- Auto-detect an axis by moving one pedal
-- Calibrate min/max and invert if needed
-- See live pedal input
+## 4) Main User Flow
+1. Open Setup Wizard
+2. Confirm wiring (BTS7960 + encoder + pedals)
+3. Detect device + choose HEX
+4. Flash firmware
+5. Calibrate (center, direction, rotation)
+6. Apply baseline preset
+7. Save to wheel (EEPROM) or PC fallback
 
-If your firmware does not expose pedal axes, the page will show N/A until supported.
+## 5) Firmware Flashing Logic
+Implemented in `Services/FirmwareFlasherService.cs`:
+- checks avrdude assets exist
+- checks selected COM exists and is not busy
+- triggers Leonardo reset (open/close at 1200 baud)
+- detects temporary bootloader COM port
+- runs avrdude flash + verify
+- retries once for transient failures
+- maps common avrdude failures to friendly hints
 
-## Demo Mode
-Toggle **Demo Mode** in the top bar to explore the UI without hardware.
+Extra actions:
+- Reset Board button (bootloader reset without flashing)
+- Manual Recovery flow
+- Last Known Good rollback
 
-## AI Side View (Ollama)
-The app includes an **AI Side View** page for local AI help and screen-aware Q&A.
+## 6) Calibration Logic
+Implemented in `Services/CalibrationService.cs` and wizard pages:
+- detect if calibration is needed
+- center capture at rest
+- direction validation
+- rotation apply + endpoint checks
+- save + verify
+- status shown on Home (`Calibrated / Not calibrated`)
+
+## 7) Settings Persistence Logic
+Implemented in:
+- `Services/SettingsService.cs` (JSON persistence)
+- `Services/DeviceSettingsService.cs` (wheel vs PC save path)
+- `Services/SettingsPersistenceTracker.cs` (state machine)
+
+Rules:
+- Apply = temporary runtime write
+- Save to Wheel = EEPROM write (if supported)
+- If EEPROM unavailable = save profile locally
+- On reconnect, app can sync from wheel and resolve profile conflicts
+
+## 8) Telemetry + Testing Dashboard
+Telemetry page includes:
+- time series plots (angle, torque, velocity, loop dt)
+- clipping/oscillation/noise heuristics
+- hardware mirror card with:
+  - live wheel angle visual
+  - live throttle/brake/clutch bars
+
+Files:
+- `ViewModels/TelemetryViewModel.cs`
+- `Views/TelemetryView.xaml`
+
+## 9) Phone Dashboard (Local LAN)
+Implemented in `Services/DashboardHostService.cs`.
+- default `http://<pc-ip>:10500`
+- LAN-only behavior
+- optional PIN
+- safe control subset from phone
+- no firmware flashing via phone
+
+## 10) Ollama AI Side View
+Implemented with:
+- `Services/OllamaService.cs`
+- `Services/ScreenCaptureService.cs`
+- `ViewModels/OllamaViewModel.cs`
+- `Views/OllamaView.xaml`
+
+Features:
+- local model list from Ollama
+- ask questions from inside app
+- optional full-screen screenshot context
+- fallback to text-only if selected model rejects images
 
 Setup:
-1. Install Ollama and start it: `ollama serve`
-2. Pull a model (vision model recommended for screen context), for example:
-   - `ollama pull llava:latest`
-3. In the app, open **AI Side View**
-4. Set endpoint (default `http://localhost:11434`), refresh models, choose a model
-5. Ask questions; enable **Include current screen** to send a screenshot with the prompt
+1. install Ollama
+2. run `ollama serve`
+3. pull a model (`ollama pull llava:latest` recommended for image context)
+4. app -> AI Side View -> Refresh Models -> select model -> Ask
 
-Notes:
-- If the selected model does not support images, the app falls back to text-only.
-- Everything stays local to your machine (no cloud dependency required).
+## 11) Project Structure
+- `ArduinoFFBControlCenter/` main WPF app
+- `ArduinoFFBControlCenter.Tests/` unit tests
+- `Installer/` MSIX scripts and manifest
 
-## Phone Dashboard (LAN)
-Enable **Phone Dashboard** in the app to serve a local mobile dashboard on your Wi-Fi:
-- Open **Phone Dashboard** page → Enable → set port/PIN → Apply.
-- Use the shown URL (e.g., `http://<PC-LAN-IP>:10500`) or QR code on your phone (same Wi-Fi).
-- Windows Firewall may prompt on first start (allow private networks).
-- No internet connection is required; it is hosted locally by the app.
-- Dashboard is **LAN-only** and uses a PIN by default.
-- Safe controls only: strength/damping/friction/inertia and profile apply.
-- If calibration is required, controls are locked unless **Advanced Remote** is enabled.
-- Layout editor lets you rearrange widgets and export/import layouts.
+Inside app project:
+- `Models/` DTOs/state objects
+- `Services/` hardware/protocol/IO logic
+- `ViewModels/` page behavior (MVVM)
+- `Views/` XAML screens
+- `Helpers/` converters and small utilities
 
-## Snapshots (Timeline + Revert)
-The app creates snapshots on:
-- Flash success
-- Save-to-wheel
-- Profile apply
-- Calibration save
-- Self-test
+## 12) Important Files (Reader Guide)
+If you are new, read these first:
+- `ViewModels/MainViewModel.cs`
+- `Services/FirmwareFlasherService.cs`
+- `Services/DeviceProtocolService.cs`
+- `Services/DeviceSettingsService.cs`
+- `ViewModels/SetupWizardViewModel.cs`
+- `ViewModels/TelemetryViewModel.cs`
+- `Services/OllamaService.cs`
+- `Services/ScreenCaptureService.cs`
 
-Each snapshot includes a `snapshot.json` and optional telemetry/logs. You can compare snapshots and revert settings/firmware.
+These files now include additional inline comments to make logic easier to follow.
 
-## Profile Gallery (.wheelprofile)
-- Export/import shareable `.wheelprofile` bundles (manifest + settings + dashboard layout).
-- Optional firmware hex in the bundle.
-- Import warnings and diff preview before applying.
+## 13) Build and Test
+From repo root:
 
-## Self-Test / Pre-Flight
-Run a one-button self-test to check encoder direction and buttons. A report is stored in snapshots.
+```powershell
+# build app + tests
+dotnet build ControlCenter/ArduinoFFBControlCenter.sln -c Release
 
-## Custom Firmware (Advanced)
-If you need non-standard pin mappings, use **Build Custom Firmware** in the Setup Wizard.
-This uses Arduino CLI (advanced) and requires the firmware source to be available in the app folder.
-
-## Install
-### Recommended (MSIX, per-user, no admin)
-1. Build the MSIX with `ControlCenter/Installer/build-msix.ps1` or download the release MSIX.
-2. If the package is signed with the included self-signed cert, run `ControlCenter/Installer/Install.ps1` (installs cert to CurrentUser and installs the MSIX).
-3. Launch **Arduino FFB Control Center** from the Start Menu.
-
-### Portable EXE (no install)
-1. Build or download the app release ZIP and extract it anywhere.
-2. Run `ArduinoFFBControlCenter.exe`.
-
-### Required assets
-- Ensure **avrdude** is present in `Assets/Tools/avrdude` (see README.txt in that folder).
-- Optional: place `wheel_control.exe` into `Assets/LegacyGUI` to enable the "Open Legacy GUI" button.
-
-## Firmware Library
-The app ships with the Leonardo HEX files from:
-- `brWheel_my/leonardo hex`
-
-To add custom HEX:
-- Copy your `.hex` into `Assets/FirmwareLibrary/Leonardo` (any subfolder is ok).
-- Click **Reload Library** in the Firmware page.
-
-## Flashing
-- Select the correct HEX (options letters are part of the version string).
-- Select the COM port.
-- Click **Flash Selected**. The app will try the 1200-baud bootloader reset and then run `avrdude`.
-- Use **Reset Board** to force Leonardo bootloader reset without flashing.
-- If the bootloader isn’t detected, use **Manual Recovery** (press reset twice quickly, then flash).
-- Rollback is available using **Last Known Good**.
-
-## Calibration (When Needed)
-The app automatically checks whether calibration is required:
-- If firmware reports calibration (via INFO), it uses those values.
-- If not, it infers from HID axis center at rest (~2 seconds).
-- If center is off or rotation looks invalid, it flags **Not calibrated**.
-
-Use the **Calibration** page or Setup Wizard to:
-- Capture center (hands off)
-- Verify direction
-- Set rotation and verify endpoints
-- Save to EEPROM (if supported) or save to PC (if not)
-
-## Saving (Wheel vs PC)
-- **Apply** updates the wheel immediately (temporary).
-- **Save to Wheel** writes settings to EEPROM when supported.
-- If EEPROM is unavailable, settings are stored to a local profile and marked **Saved to PC**.
-- On connect, the app prefers **Wheel settings** and prompts if the last profile differs.
-- A backup snapshot is saved before every EEPROM write; use **Restore Previous** on the FFB page.
-- Toggle **Auto-apply last profile on connect** in Profiles to re-apply your last tune.
-
-## Recovery (Bootloader)
-1. Unplug the wheel.
-2. Hold reset, plug USB, then release (or double-press reset).
-3. Use **Manual Recovery** and select the bootloader COM port.
-
-## BTS7960 PWM Note
-Release notes and community guidance recommend:
-- **Fast PWM**
-- **PWM+-**
-- **~8kHz** (7.8kHz) for H-bridge drivers like BTS7960
-
-These are the typical defaults in the firmware for BTS7960 builds.
-
-## Data Storage
-Profiles, logs, and settings are stored at:
-```
-%AppData%/ArduinoFFBControlCenter/
+# run tests
+dotnet test ControlCenter/ArduinoFFBControlCenter.sln -c Release --no-build
 ```
 
-## Troubleshooting
-- If flash fails, verify the port, close other serial tools, and check that `avrdude.exe` + `avrdude.conf` exist.
-- If telemetry is flat, enable FFB monitor by clicking **Telemetry** and making sure the device is connected.
-- If the device isn’t detected, manually select the COM port and click **Connect**.
-- For bootloader issues, double-press reset and use **Manual Recovery**.
+## 14) Publish EXE
+Safe default (recommended):
 
-## Build (Developer)
-```
-dotnet restore ControlCenter/ArduinoFFBControlCenter/ArduinoFFBControlCenter.csproj
-
-# Release publish
-
-dotnet publish ControlCenter/ArduinoFFBControlCenter/ArduinoFFBControlCenter.csproj -c Release -r win-x64 \
-  /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+```powershell
+dotnet publish ControlCenter/ArduinoFFBControlCenter/ArduinoFFBControlCenter.csproj -c Release -r win-x64 --self-contained true
 ```
 
-### MSIX packaging (Developer)
+Single-file publish:
+
+```powershell
+dotnet publish ControlCenter/ArduinoFFBControlCenter/ArduinoFFBControlCenter.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
+
+Output path:
+- `ControlCenter/ArduinoFFBControlCenter/bin/Release/net8.0-windows/win-x64/publish/`
+
+## 15) Installer (MSIX)
+
+```powershell
 ControlCenter/Installer/build-msix.ps1
 ```
-Outputs `ControlCenter/Installer/output/ArduinoFFBControlCenter.msix` and a self-signed cert in `ControlCenter/Installer/cert/`.
+
+Then install using:
+
+```powershell
+ControlCenter/Installer/Install.ps1
+```
+
+## 16) Where Data Is Stored
+Everything persists under:
+- `%AppData%/ArduinoFFBControlCenter/`
+
+Includes:
+- app settings
+- wizard state
+- profiles
+- snapshots
+- logs
+- support bundles
+
+## 17) Troubleshooting
+### App does not open
+- check `%TEMP%/ArduinoFFBControlCenter-crash.log`
+- update to latest repo (startup issues were fixed)
+
+### Flash fails / bootloader not detected
+- close IDE, serial monitor, legacy GUI
+- try Reset Board
+- then Manual Recovery and press reset when prompted
+
+### No telemetry
+- ensure device supports telemetry/capability
+- ensure serial is connected
+- check if firmware build has expected options
+
+### Ollama not responding
+- start service: `ollama serve`
+- verify endpoint `http://localhost:11434`
+- run `ollama list` and ensure a model exists
+
+## 18) Cleanup of Non-Needed Local Files
+To keep workspace clean, generated build folders are safe to remove:
+- `ControlCenter/ArduinoFFBControlCenter/bin`
+- `ControlCenter/ArduinoFFBControlCenter/obj`
+- `ControlCenter/ArduinoFFBControlCenter.Tests/bin`
+- `ControlCenter/ArduinoFFBControlCenter.Tests/obj`
+
+These are ignored by `.gitignore` and recreated automatically on build.
+
+## 19) Credits
+- Original firmware: Milos Rankovic (ranenbg)
+- Original repo: https://github.com/ranenbg/Arduino-FFB-wheel
+- Legacy GUI: https://github.com/ranenbg/Arduino-FFB-gui

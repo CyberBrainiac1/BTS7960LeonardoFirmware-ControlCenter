@@ -8,6 +8,10 @@ using ArduinoFFBControlCenter.Services;
 
 namespace ArduinoFFBControlCenter.ViewModels;
 
+/// <summary>
+/// Guided onboarding flow for first-time wheel setup.
+/// Captures wiring, firmware choice, calibration, baseline preset, and save.
+/// </summary>
 public partial class SetupWizardViewModel : ViewModelBase
 {
     private readonly LoggerService _logger;
@@ -98,6 +102,7 @@ public partial class SetupWizardViewModel : ViewModelBase
         AppSettings appSettings,
         SnapshotService snapshots)
     {
+        // Initialization order matters: load options first, then restore saved wizard state.
         _logger = logger;
         _deviceManager = deviceManager;
         _flasher = flasher;
@@ -156,6 +161,7 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     private void LoadPinOptions()
     {
+        // Pin catalogs are constrained to valid Leonardo pins to prevent invalid mappings.
         DigitalPins.Clear();
         foreach (var pin in LeonardoPinCatalog.GetAllPins())
         {
@@ -255,6 +261,7 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     private void SaveState()
     {
+        // Property change handlers fire during constructor setup; skip persistence until ready.
         if (_isInitializing || _state == null)
         {
             return;
@@ -527,6 +534,7 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     private void UpdateWiringSummary()
     {
+        // Human-readable wiring table used in UI and troubleshooting exports.
         var sb = new StringBuilder();
         sb.AppendLine("Arduino Leonardo Wiring Summary");
         sb.AppendLine($"RPWM: {RpwmPin}");
@@ -554,6 +562,7 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     private bool ValidateWiring()
     {
+        // Validation is strict by design: catch unsafe/invalid wiring early.
         WiringWarnings.Clear();
         var selected = new List<string?> { RpwmPin, LpwmPin, REnPin, LEnPin, EncoderAPin, EncoderBPin, EStopPin, Button1Pin, Button2Pin, ShifterXPin, ShifterYPin };
         if (HasPedals)
@@ -618,6 +627,7 @@ public partial class SetupWizardViewModel : ViewModelBase
         var wiring = BuildWiringConfig();
         if (!UseCustomBuild && !wiring.IsDefaultLeonardo())
         {
+            // With precompiled HEX workflow, custom pinouts need matching build support.
             WiringWarnings.Add("Wiring does not match default Leonardo pinout. Use custom build or select a matching HEX.");
         }
 

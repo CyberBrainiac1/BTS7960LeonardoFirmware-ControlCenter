@@ -5,6 +5,13 @@ using ArduinoFFBControlCenter.Models;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// High-level settings orchestration:
+/// - read/apply/save wheel config
+/// - PC fallback when EEPROM is unavailable
+/// - persistence state tracking (Saved to wheel / PC / unsaved)
+/// - conflict resolution on connect
+/// </summary>
 public class DeviceSettingsService
 {
     private readonly LoggerService _logger;
@@ -44,18 +51,21 @@ public class DeviceSettingsService
         _caps = caps;
     }
 
+    // Capability gate: serial config commands exist only on compatible firmware.
     public bool CanUseSerialConfig()
     {
         var caps = _caps.GetCapabilities(_deviceState.CurrentDevice);
         return caps.SupportsSerialConfig;
     }
 
+    // EEPROM save is a subset of serial support (disabled on 'p' builds).
     public bool CanSaveToWheel()
     {
         var caps = _caps.GetCapabilities(_deviceState.CurrentDevice);
         return caps.SupportsSerialConfig && caps.SupportsEepromSave;
     }
 
+    // Pulls current config from wheel and propagates it into shared tuning state.
     public async Task<FfbConfig?> LoadFromDeviceAsync(CancellationToken ct)
     {
         if (!CanUseSerialConfig())
@@ -79,6 +89,7 @@ public class DeviceSettingsService
         return config;
     }
 
+    // Applies full config using existing firmware SET commands.
     public async Task ApplyConfigAsync(FfbConfig config, CancellationToken ct)
     {
         if (!CanUseSerialConfig())
@@ -159,6 +170,7 @@ public class DeviceSettingsService
         return Task.Delay(200, ct);
     }
 
+    // Save flow: backup -> EEPROM write -> reload to verify persisted values.
     public async Task SaveToWheelAsync(CancellationToken ct)
     {
         if (!CanSaveToWheel())
@@ -182,6 +194,7 @@ public class DeviceSettingsService
         await LoadFromDeviceAsync(ct);
     }
 
+    // PC fallback path when device cannot persist config itself.
     public void SaveToPc(Profile profile)
     {
         _profiles.SaveProfile(profile);
@@ -215,6 +228,10 @@ public class DeviceSettingsService
         _logger.Info("Backup settings applied.");
     }
 
+    // Connect-time sync strategy:
+    // 1) prefer wheel config when readable
+    // 2) prompt user if wheel and last profile differ
+    // 3) optionally apply profile based on user choice
     public async Task SyncOnConnectAsync(Func<SettingsConflictChoice>? resolveConflict, CancellationToken ct)
     {
         var device = _deviceState.CurrentDevice;
@@ -260,6 +277,7 @@ public class DeviceSettingsService
         }
     }
 
+    // Pre-save backup used by "Restore previous settings".
     private async Task BackupCurrentAsync(CancellationToken ct)
     {
         if (!CanUseSerialConfig())
@@ -294,6 +312,7 @@ public class DeviceSettingsService
         PersistenceChanged?.Invoke(_tracker.State);
     }
 
+    // Shared retry+timeout helper for serial commands.
     private async Task<T?> ExecuteWithRetryAsync<T>(Func<Task<T>> action, string label, CancellationToken ct, int retries, int timeoutMs)
     {
         Exception? last = null;

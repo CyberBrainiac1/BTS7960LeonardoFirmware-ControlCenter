@@ -5,6 +5,9 @@ using ArduinoFFBControlCenter.Models;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// Handles COM port scanning, device connect/disconnect, and basic auto-detect.
+/// </summary>
 public class DeviceManagerService
 {
     private readonly SerialDeviceService _serial;
@@ -22,6 +25,10 @@ public class DeviceManagerService
 
     public string[] ScanPorts() => SerialPort.GetPortNames().OrderBy(p => p).ToArray();
 
+    // Connect sequence:
+    // 1) open serial port
+    // 2) try INFO, fallback to version/settings commands
+    // 3) decorate with WMI VID/PID metadata
     public async Task<DeviceInfo> ConnectAsync(string port)
     {
         await _serial.ConnectAsync(port);
@@ -103,6 +110,7 @@ public class DeviceManagerService
         _serial.Disconnect();
     }
 
+    // Simple probe: send V command and look for fw-v response.
     public async Task<string?> AutoDetectPortAsync()
     {
         foreach (var port in ScanPorts())

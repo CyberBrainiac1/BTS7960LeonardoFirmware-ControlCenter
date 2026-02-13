@@ -5,6 +5,10 @@ using ArduinoFFBControlCenter.Models;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// Minimal Ollama HTTP client for local model listing and chat calls.
+/// Uses non-streaming responses to keep integration simple inside WPF.
+/// </summary>
 public class OllamaService
 {
     private readonly HttpClient _http;
@@ -20,6 +24,7 @@ public class OllamaService
         _http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
     }
 
+    // Reads local model registry from Ollama (/api/tags).
     public async Task<IReadOnlyList<string>> ListModelsAsync(string endpoint, CancellationToken ct)
     {
         try
@@ -41,6 +46,7 @@ public class OllamaService
         }
     }
 
+    // Sends chat history + current user prompt, optionally with screenshot image bytes.
     public async Task<(bool Success, string Content, string Error)> AskAsync(
         string endpoint,
         string model,
@@ -121,6 +127,7 @@ public class OllamaService
         }
     }
 
+    // Normalizes endpoints like localhost:11434 -> http://localhost:11434.
     private static string BuildUrl(string endpoint, string path)
     {
         var trimmed = string.IsNullOrWhiteSpace(endpoint) ? "http://localhost:11434" : endpoint.Trim();

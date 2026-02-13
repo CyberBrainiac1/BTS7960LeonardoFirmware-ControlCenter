@@ -9,6 +9,10 @@ using ArduinoFFBControlCenter.Services;
 
 namespace ArduinoFFBControlCenter.ViewModels;
 
+/// <summary>
+/// ViewModel for the in-app Ollama side panel.
+/// Supports local chat plus optional screenshot context per prompt.
+/// </summary>
 public partial class OllamaViewModel : ViewModelBase
 {
     private readonly LoggerService _logger;
@@ -50,6 +54,7 @@ public partial class OllamaViewModel : ViewModelBase
     [RelayCommand]
     private async Task RefreshModelsAsync()
     {
+        // Query locally available models from Ollama.
         IsBusy = true;
         Status = "Loading Ollama models...";
         var models = await _ollama.ListModelsAsync(Endpoint, CancellationToken.None);
@@ -78,6 +83,7 @@ public partial class OllamaViewModel : ViewModelBase
     [RelayCommand]
     private void CaptureScreen()
     {
+        // Manual capture lets users verify what context will be sent.
         try
         {
             var png = _screenCapture.CaptureVirtualScreenPng();
@@ -106,6 +112,7 @@ public partial class OllamaViewModel : ViewModelBase
             return;
         }
 
+        // Keep a trimmed history so requests stay fast and deterministic.
         IsBusy = true;
         var history = Messages.ToList();
         Messages.Add(new OllamaChatEntry
@@ -116,6 +123,7 @@ public partial class OllamaViewModel : ViewModelBase
         });
         Prompt = string.Empty;
 
+        // Include the screenshot when requested; this works only with vision-capable models.
         byte[]? screenshot = null;
         if (IncludeScreen)
         {

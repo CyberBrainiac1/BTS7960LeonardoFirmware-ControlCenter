@@ -7,6 +7,11 @@ using ArduinoFFBControlCenter.Models;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// Handles all firmware-flash operations for Leonardo boards using avrdude.
+/// The flow matches the official Arduino bootloader behavior:
+/// 1200-baud touch -> temporary bootloader COM port -> flash -> verify.
+/// </summary>
 public class FirmwareFlasherService
 {
     private readonly LoggerService _logger;
@@ -21,8 +26,13 @@ public class FirmwareFlasherService
     public string AvrDudePath => Path.Combine(ToolsRoot, "avrdude.exe");
     public string AvrDudeConf => Path.Combine(ToolsRoot, "avrdude.conf");
 
+    // Flashing cannot run without these bundled tools.
     public bool ToolsAvailable => File.Exists(AvrDudePath) && File.Exists(AvrDudeConf);
 
+    /// <summary>
+    /// Performs only the reset/bootloader step (no flashing).
+    /// Useful when the user wants to re-enumerate the board quickly.
+    /// </summary>
     public async Task<FlashResult> ResetBoardAsync(string port, IProgress<string> progress, CancellationToken ct)
     {
         var result = new FlashResult();
@@ -62,6 +72,10 @@ public class FirmwareFlasherService
         return result;
     }
 
+    /// <summary>
+    /// Attempts flashing once, then retries exactly once for transient failures.
+    /// Busy port / missing tools / missing COM are returned immediately.
+    /// </summary>
     public async Task<FlashResult> FlashWithRetryAsync(string hexPath, string port, IProgress<string> progress, CancellationToken ct, bool skipReset = false)
     {
         var first = await FlashInternalAsync(hexPath, port, progress, ct, skipReset);
@@ -76,6 +90,7 @@ public class FirmwareFlasherService
         return second;
     }
 
+    // Single flash attempt: validate environment, optionally reset, write, then verify.
     private async Task<FlashResult> FlashInternalAsync(string hexPath, string port, IProgress<string> progress, CancellationToken ct, bool skipReset)
     {
         var result = new FlashResult();
@@ -157,6 +172,10 @@ public class FirmwareFlasherService
         return result;
     }
 
+    // Leonardo bootloader detection:
+    // 1) remember COM ports
+    // 2) open+close selected port at 1200 baud
+    // 3) watch for a new COM or temporary disappearance/reappearance
     private async Task<string?> EnterBootloaderAsync(string port, IProgress<string> progress, CancellationToken ct)
     {
         try
@@ -204,6 +223,7 @@ public class FirmwareFlasherService
         return null;
     }
 
+    // Executes avrdude and streams stdout/stderr back to the UI log.
     private async Task<int> RunAvrDudeAsync(string args, IProgress<string> progress, StringBuilder logBuffer, CancellationToken ct)
     {
         var psi = new ProcessStartInfo
@@ -249,6 +269,7 @@ public class FirmwareFlasherService
         return await tcs.Task;
     }
 
+    // Busy check is done before reset/flash to avoid collisions with IDE, serial monitors, legacy GUI, etc.
     private bool IsPortBusy(string port, out string reason)
     {
         reason = "Close other serial tools (Arduino IDE, legacy GUI) and disconnect in the app.";
@@ -273,6 +294,7 @@ public class FirmwareFlasherService
         }
     }
 
+    // Converts raw avrdude output into actionable, beginner-friendly hints.
     private void ApplyFriendlyError(FlashResult result)
     {
         var output = result.RawOutput ?? string.Empty;
@@ -305,6 +327,7 @@ public class FirmwareFlasherService
         result.SuggestedAction = "Retry the flash or use a different USB cable.";
     }
 
+    // Keeps the last full flash log for diagnostics/support bundle export.
     private void TryWriteLastFlash(StringBuilder logBuffer)
     {
         try

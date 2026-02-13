@@ -12,6 +12,12 @@ using ArduinoFFBControlCenter.Models;
 
 namespace ArduinoFFBControlCenter.ViewModels;
 
+/// <summary>
+/// Telemetry page VM:
+/// - renders time-series plots
+/// - computes health indicators
+/// - mirrors live wheel/pedal state in a simple test dashboard
+/// </summary>
 public partial class TelemetryViewModel : ViewModelBase
 {
     private readonly TelemetryService _telemetry;
@@ -61,6 +67,7 @@ public partial class TelemetryViewModel : ViewModelBase
         _hid = hid;
         _pedals = pedals;
         _tuningState = tuningState;
+        // UI refresh timer keeps charts smooth while telemetry service runs on background sampling.
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
         _timer.Tick += (_, __) => RefreshPoints();
         _timer.Start();
@@ -97,6 +104,7 @@ public partial class TelemetryViewModel : ViewModelBase
 
     private void RefreshPoints()
     {
+        // Rebuild small point collections each tick for lightweight chart rendering.
         var samples = _telemetry.GetSamplesSnapshot();
         if (samples.Count == 0)
         {
@@ -154,6 +162,7 @@ public partial class TelemetryViewModel : ViewModelBase
 
     private void Analyze(IReadOnlyList<TelemetrySample> samples)
     {
+        // Simple heuristics to provide immediate tuning hints without external tools.
         var window = samples.TakeLast(300).ToList();
         if (window.Count < 20)
         {
@@ -230,6 +239,7 @@ public partial class TelemetryViewModel : ViewModelBase
 
     private void UpdateHardwareMirror(IReadOnlyList<TelemetrySample> samples)
     {
+        // Mirror uses raw HID + configured rotation so visual wheel angle matches real hardware.
         if (!_hid.IsAttached)
         {
             MirrorStatus = "HID not attached. Connect the wheel to show live mirror.";
@@ -265,6 +275,7 @@ public partial class TelemetryViewModel : ViewModelBase
         WheelVisualAngleDeg = normalized * (rotationDeg / 2.0);
         WheelAngleText = $"{WheelVisualAngleDeg:0.0}°";
 
+        // Pedal bars use the same mapping/calibration pipeline as the dedicated Pedals page.
         var pedal = _pedals.GetSample();
         ThrottleRaw = pedal.RawThrottle;
         BrakeRaw = pedal.RawBrake;

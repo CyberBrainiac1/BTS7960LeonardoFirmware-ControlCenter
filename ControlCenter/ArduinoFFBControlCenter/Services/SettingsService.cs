@@ -4,6 +4,8 @@ using ArduinoFFBControlCenter.Models;
 
 namespace ArduinoFFBControlCenter.Services;
 
+// App-wide persisted settings object.
+// Stored as JSON under %AppData%/ArduinoFFBControlCenter/.
 public class AppSettings
 {
     public string? LastPort { get; set; }
@@ -61,6 +63,7 @@ public class SettingsService
     private readonly JsonSerializerOptions _options = new() { WriteIndented = true };
     public event Action<AppSettings>? Saved;
 
+    // Loads persisted settings and backfills new fields with safe defaults.
     public AppSettings Load()
     {
         AppSettings settings;
@@ -76,6 +79,7 @@ public class SettingsService
         return settings;
     }
 
+    // Saves settings atomically as a single JSON file.
     public void Save(AppSettings settings)
     {
         EnsureDefaults(settings);
@@ -84,6 +88,7 @@ public class SettingsService
         Saved?.Invoke(settings);
     }
 
+    // Centralized default migration so old config files still work after updates.
     private static void EnsureDefaults(AppSettings settings)
     {
         settings.LastTuningConfig ??= new FfbConfig();

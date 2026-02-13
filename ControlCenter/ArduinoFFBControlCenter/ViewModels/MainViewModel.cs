@@ -11,6 +11,10 @@ using ArduinoFFBControlCenter.Services;
 
 namespace ArduinoFFBControlCenter.ViewModels;
 
+/// <summary>
+/// Root app-shell viewmodel.
+/// Owns global services, navigation, connection state, and app-wide mode toggles.
+/// </summary>
 public partial class MainViewModel : ViewModelBase
 {
     private readonly LoggerService _logger;
@@ -104,6 +108,8 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
+        // Service bootstrap kept explicit for readability.
+        // This app is intentionally single-process/single-device oriented.
         _logger = new LoggerService();
         _settingsService = new SettingsService();
         _settings = _settingsService.Load();
@@ -137,6 +143,7 @@ public partial class MainViewModel : ViewModelBase
         _screenCapture = new ScreenCaptureService();
         _ollama = new OllamaService(_logger);
 
+        // Build all pages once and keep them alive in navigation list.
         BuildNavigation();
         ScanPorts();
 
@@ -152,6 +159,7 @@ public partial class MainViewModel : ViewModelBase
             LastFlashStatus = _settings.LastFlashStatus!;
         }
 
+        // Restore persisted UI mode flags.
         IsBeginnerMode = _settings.BeginnerMode;
         _uiMode.SetBeginnerMode(IsBeginnerMode);
         IsKidMode = false;
@@ -164,6 +172,7 @@ public partial class MainViewModel : ViewModelBase
             EnterDemoMode();
         }
 
+        // Restore last tuning state so UI opens with previous values.
         if (_settings.LastTuningConfig != null)
         {
             _tuningState.UpdateConfig(_settings.LastTuningConfig);
@@ -178,6 +187,7 @@ public partial class MainViewModel : ViewModelBase
         }
         _tuningState.StateChanged += PersistTuningState;
 
+        // Optional local phone dashboard autostart.
         if (_settings.DashboardEnabled)
         {
             _ = StartDashboardAsync();
@@ -208,6 +218,7 @@ public partial class MainViewModel : ViewModelBase
 
     private void BuildNavigation()
     {
+        // One viewmodel per module keeps each area isolated and testable.
         var home = new HomeViewModel(_logger, _hid, _telemetry, _deviceState, _calibration, _deviceSettings);
         var wizard = new SetupWizardViewModel(_logger, _deviceManager, _flasher, _firmwareLibrary, _profiles, _deviceState, _tuningState, _calibration, _deviceSettings, _wizardState, _customBuilder, _settingsService, _settings, _snapshots);
         var calibration = new CalibrationViewModel(_logger, _calibration, _deviceSettings, _deviceState, _capabilities, _tuningState, _snapshots);
@@ -267,6 +278,7 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private async Task ToggleConnectAsync()
     {
+        // Demo mode intentionally blocks real serial connect.
         if (IsDemoMode)
         {
             _logger.Warn("Demo mode is active. Disable demo mode to connect.");
@@ -275,6 +287,7 @@ public partial class MainViewModel : ViewModelBase
 
         if (_serial.IsConnected)
         {
+            // Graceful disconnect path.
             _telemetry.Stop();
             _hid.Stop();
             _deviceManager.Disconnect();
@@ -297,6 +310,7 @@ public partial class MainViewModel : ViewModelBase
 
         try
         {
+            // Connect -> sync settings -> attach HID -> start telemetry.
             CurrentDevice = await _deviceManager.ConnectAsync(SelectedPort);
             StatusText = "Connected";
             StatusBrush = Brushes.LimeGreen;
@@ -309,6 +323,7 @@ public partial class MainViewModel : ViewModelBase
 
             await _deviceSettings.SyncOnConnectAsync(() =>
             {
+                // Conservative default: trust wheel values unless user chooses otherwise.
                 var result = MessageBox.Show(
                     "Wheel settings differ from your last profile. Use wheel settings?",
                     "Settings Conflict",
@@ -406,6 +421,7 @@ public partial class MainViewModel : ViewModelBase
 
     private void EnterDemoMode()
     {
+        // Demo mode injects a fake device and synthetic telemetry for UI exploration.
         if (_serial.IsConnected)
         {
             _deviceManager.Disconnect();

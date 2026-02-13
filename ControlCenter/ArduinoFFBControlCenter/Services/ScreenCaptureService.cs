@@ -6,8 +6,13 @@ using DrawingSize = System.Drawing.Size;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// Captures the full virtual desktop into PNG bytes for local AI context.
+/// The image is optionally downscaled to keep request sizes practical.
+/// </summary>
 public class ScreenCaptureService
 {
+    // Captures all monitors (virtual screen), not only the primary display.
     public byte[] CaptureVirtualScreenPng(int maxWidth = 1280)
     {
         var left = (int)SystemParameters.VirtualScreenLeft;
@@ -27,6 +32,7 @@ public class ScreenCaptureService
         return ms.ToArray();
     }
 
+    // Downscale only when needed so text remains readable while payload stays small.
     private static Bitmap ScaleIfNeeded(Bitmap source, int maxWidth)
     {
         if (source.Width <= maxWidth)

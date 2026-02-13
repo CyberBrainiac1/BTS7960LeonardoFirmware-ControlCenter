@@ -3,6 +3,10 @@ using ArduinoFFBControlCenter.Models;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// Thin protocol adapter for Arduino-FFB-wheel serial commands.
+/// Keeps command strings in one place and normalizes parsing.
+/// </summary>
 public class DeviceProtocolService
 {
     private readonly SerialDeviceService _serial;
@@ -20,6 +24,8 @@ public class DeviceProtocolService
         _logger = logger;
     }
 
+    // Firmware option letters are encoded in the version string (fw-vXXX...letters).
+    // This parser maps those letters into app capability flags.
     public static CapabilityFlags ParseCapabilities(string fwVersion)
     {
         fwVersion = fwVersion.ToLowerInvariant();
@@ -44,6 +50,8 @@ public class DeviceProtocolService
         return flags;
     }
 
+    // Optional extended INFO command (if firmware patch exists).
+    // Fallbacks are handled by callers when this returns null.
     public async Task<DeviceInfoResponse?> TryGetInfoAsync()
     {
         try
@@ -96,12 +104,14 @@ public class DeviceProtocolService
         }
     }
 
+    // Version-only query (works on legacy firmware without INFO extension).
     public async Task<string> GetFirmwareVersionAsync()
     {
         var line = await _serial.SendCommandAsync("V", s => s.StartsWith("fw-v", StringComparison.OrdinalIgnoreCase));
         return line.Trim();
     }
 
+    // Reads the compact "U" settings payload from firmware.
     public async Task<FfbConfig> GetAllSettingsAsync()
     {
         var line = await _serial.SendCommandAsync("U", s => s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 10);
@@ -116,27 +126,32 @@ public class DeviceProtocolService
         return config;
     }
 
+    // Rotation/degrees command.
     public async Task SetRotationAsync(int deg)
     {
         await ExecuteWithTelemetrySuppressedAsync(() => _serial.SendCommandAsync($"G {deg}", s => s.Trim() == "1" || s.Trim() == "0"));
     }
 
+    // Re-centers encoder according to active firmware behavior.
     public async Task CenterAsync()
     {
         await ExecuteWithTelemetrySuppressedAsync(() => _serial.SendCommandAsync("C", s => s.Trim() == "1" || s.Trim() == "0"));
     }
 
+    // Starts firmware-side calibration routine (fire-and-forget command).
     public Task CalibrateAsync()
     {
         _serial.SendCommandNoWait("R");
         return Task.CompletedTask;
     }
 
+    // Saves settings to EEPROM on supported builds.
     public async Task SaveAsync()
     {
         await ExecuteWithTelemetrySuppressedAsync(() => _serial.SendCommandAsync("A", s => s.Trim() == "1" || s.Trim() == "0"));
     }
 
+    // Effect-gain setters map to firmware F* serial commands.
     public async Task SetGainAsync(string code, int value)
     {
         await ExecuteWithTelemetrySuppressedAsync(() => _serial.SendCommandAsync($"F{code} {value}", s => s.Trim() == "1"));
@@ -159,6 +174,7 @@ public class DeviceProtocolService
         return Task.CompletedTask;
     }
 
+    // Toggles telemetry monitor bit in effstate and updates serial parser mode.
     public async Task SetTelemetryEnabledAsync(bool enable)
     {
         var eff = EffStateCache;
@@ -175,6 +191,7 @@ public class DeviceProtocolService
         _logger.Info($"Telemetry {(enable ? "enabled" : "disabled")}");
     }
 
+    // While sending config commands we pause telemetry to avoid mixed response lines.
     private async Task<T> ExecuteWithTelemetrySuppressedAsync<T>(Func<Task<T>> action)
     {
         if (!_serial.TelemetryEnabled)
@@ -195,6 +212,7 @@ public class DeviceProtocolService
         return result;
     }
 
+    // Config payload format is fixed-size and position-based.
     private static FfbConfig? TryParseConfig(string[] parts, int offset)
     {
         if (parts.Length - offset < 16)
@@ -223,6 +241,7 @@ public class DeviceProtocolService
         };
     }
 
+    // Optional calibration block appended to INFO response.
     private static CalibrationInfo? TryParseCalibration(string[] parts, int offset)
     {
         if (parts.Length - offset < 4)

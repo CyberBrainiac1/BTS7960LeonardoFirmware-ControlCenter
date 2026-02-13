@@ -3,6 +3,12 @@ using System.Text;
 
 namespace ArduinoFFBControlCenter.Services;
 
+/// <summary>
+/// Shared serial transport:
+/// - command/response requests
+/// - background line reader
+/// - telemetry line routing
+/// </summary>
 public class SerialDeviceService
 {
     private readonly LoggerService _logger;
@@ -64,6 +70,7 @@ public class SerialDeviceService
         }
     }
 
+    // One command at a time prevents interleaved responses.
     public async Task<string> SendCommandAsync(string command, Func<string, bool>? responseMatch = null, int timeoutMs = 1200)
     {
         if (_port == null || !_port.IsOpen)
@@ -93,6 +100,7 @@ public class SerialDeviceService
         }
     }
 
+    // Non-blocking send used for fire-and-forget commands.
     public void SendCommandNoWait(string command)
     {
         if (_port == null || !_port.IsOpen)
@@ -102,6 +110,7 @@ public class SerialDeviceService
         _port.Write(command + "\r");
     }
 
+    // Background byte reader that reconstructs CR/LF line messages.
     private async Task ReadLoopAsync(CancellationToken ct)
     {
         if (_port == null)
@@ -155,6 +164,7 @@ public class SerialDeviceService
         }
     }
 
+    // Route lines either to pending command, telemetry callback, or generic log handler.
     private void HandleLine(string line)
     {
         if (_pendingResponse != null)
