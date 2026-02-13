@@ -46,6 +46,9 @@ public class AppSettings
     public string? DashboardPin { get; set; }
     public bool DashboardRequirePin { get; set; } = true;
     public bool DashboardAdvancedRemote { get; set; }
+    public string? OllamaEndpoint { get; set; } = "http://localhost:11434";
+    public string? OllamaModel { get; set; }
+    public bool OllamaIncludeScreenCapture { get; set; } = true;
     public bool BeginnerMode { get; set; } = true;
     public bool KidMode { get; set; }
     public bool DemoMode { get; set; }
@@ -97,6 +100,10 @@ public class SettingsService
         };
         settings.PedalMapping ??= new PedalAxisMapping();
         settings.PedalCalibration ??= new PedalCalibration();
+        if (string.IsNullOrWhiteSpace(settings.OllamaEndpoint))
+        {
+            settings.OllamaEndpoint = "http://localhost:11434";
+        }
 
         if (settings.DashboardPort <= 0 || settings.DashboardPort > 65535)
         {

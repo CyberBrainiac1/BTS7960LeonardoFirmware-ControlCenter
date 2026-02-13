@@ -163,7 +163,7 @@ public partial class FfbTuningViewModel : ViewModelBase
         for (int i = 0; i <= 100; i++)
         {
             double input = (i / 100.0) * 2 - 1;
-            prev = prev + (input - prev) * previewSmoothing;
+            prev = prev + (input - prev) * PreviewSmoothing;
             var x = i;
             var y = 50 - prev * 45;
             points.Add(new Point(x, y));

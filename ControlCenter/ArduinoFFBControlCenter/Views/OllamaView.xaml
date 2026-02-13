@@ -1,0 +1,68 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.OllamaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <Grid Margin="24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <ColumnDefinition Width="3*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+            <StackPanel helpers:PanelSpacing.Spacing="8">
+                <TextBlock Text="Ollama Side View" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Ask about settings, errors, and what is visible on your screen." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+
+                <TextBlock Text="Endpoint" Foreground="{StaticResource MutedText}" />
+                <TextBox Text="{Binding Endpoint, UpdateSourceTrigger=PropertyChanged}" />
+
+                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                    <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" />
+                    <ComboBox Width="220" ItemsSource="{Binding Models}" SelectedItem="{Binding SelectedModel}" />
+                </StackPanel>
+
+                <CheckBox Content="Include current screen in prompt (vision model required)" IsChecked="{Binding IncludeScreen}" Foreground="{StaticResource MutedText}" />
+                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                    <Button Content="Capture Screen Now" Command="{Binding CaptureScreenCommand}" />
+                    <Button Content="Clear Chat" Command="{Binding ClearChatCommand}" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding LastCaptureInfo}" Foreground="{StaticResource MutedText}" />
+                <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="8" Padding="4" Height="160">
+                    <Image Source="{Binding LastCapturePreview}" Stretch="Uniform" />
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1" Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Messages}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,0,8" Padding="10" BorderThickness="1" CornerRadius="8" BorderBrush="{StaticResource CardBorder}" Background="#0F151C">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Role}" FontWeight="SemiBold" Foreground="{StaticResource Accent2}" />
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                        <TextBlock Text="{Binding TimestampLocal, StringFormat={}{0:HH:mm:ss}}" Foreground="{StaticResource MutedText}" FontSize="11" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <StackPanel Grid.Row="1" helpers:PanelSpacing.Spacing="8">
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedText}" />
+                    <TextBox Text="{Binding Prompt, UpdateSourceTrigger=PropertyChanged}" Height="96" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+                    <Button Content="Ask Ollama" Command="{Binding AskCommand}" Style="{StaticResource AccentButton}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -13,10 +13,8 @@ A Windows-only Control Center for DIY FFB wheels running **ranenbg/Arduino-FFB-w
 - Simplified sliders with explanations.
 - Calibration status and save status on Home.
 
-## Kid / Guest Mode
-Enable **Kid Mode** in the top bar to apply hard caps to strength and disable advanced controls.
-
 ## Advanced Mode
+- Toggle **Advanced Mode** in the top bar (Beginner off).
 - Full effect scaling controls.
 - Curve editor (stored in profiles; apply requires firmware support).
 - Lab Tools: built-in effect tester + input tester.
@@ -40,6 +38,21 @@ If your firmware does not expose pedal axes, the page will show N/A until suppor
 
 ## Demo Mode
 Toggle **Demo Mode** in the top bar to explore the UI without hardware.
+
+## AI Side View (Ollama)
+The app includes an **AI Side View** page for local AI help and screen-aware Q&A.
+
+Setup:
+1. Install Ollama and start it: `ollama serve`
+2. Pull a model (vision model recommended for screen context), for example:
+   - `ollama pull llava:latest`
+3. In the app, open **AI Side View**
+4. Set endpoint (default `http://localhost:11434`), refresh models, choose a model
+5. Ask questions; enable **Include current screen** to send a screenshot with the prompt
+
+Notes:
+- If the selected model does not support images, the app falls back to text-only.
+- Everything stays local to your machine (no cloud dependency required).
 
 ## Phone Dashboard (LAN)
 Enable **Phone Dashboard** in the app to serve a local mobile dashboard on your Wi-Fi:
@@ -100,6 +113,7 @@ To add custom HEX:
 - Select the correct HEX (options letters are part of the version string).
 - Select the COM port.
 - Click **Flash Selected**. The app will try the 1200-baud bootloader reset and then run `avrdude`.
+- Use **Reset Board** to force Leonardo bootloader reset without flashing.
 - If the bootloader isn’t detected, use **Manual Recovery** (press reset twice quickly, then flash).
 - Rollback is available using **Last Known Good**.
 

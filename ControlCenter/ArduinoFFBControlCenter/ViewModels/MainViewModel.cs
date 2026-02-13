@@ -42,6 +42,8 @@ public partial class MainViewModel : ViewModelBase
     private readonly SnapshotService _snapshots;
     private readonly WheelProfileService _wheelProfiles;
     private readonly SelfTestService _selfTest;
+    private readonly ScreenCaptureService _screenCapture;
+    private readonly OllamaService _ollama;
 
     public ObservableCollection<NavItem> NavigationItems { get; } = new();
     public ObservableCollection<string> AvailablePorts { get; } = new();
@@ -132,6 +134,8 @@ public partial class MainViewModel : ViewModelBase
         _snapshots = new SnapshotService(_logger);
         _wheelProfiles = new WheelProfileService(_dashboardLayout);
         _selfTest = new SelfTestService(_hid, _hidTelemetry, _logger);
+        _screenCapture = new ScreenCaptureService();
+        _ollama = new OllamaService(_logger);
 
         BuildNavigation();
         ScanPorts();
@@ -150,8 +154,10 @@ public partial class MainViewModel : ViewModelBase
 
         IsBeginnerMode = _settings.BeginnerMode;
         _uiMode.SetBeginnerMode(IsBeginnerMode);
-        IsKidMode = _settings.KidMode;
-        _uiMode.SetKidMode(IsKidMode);
+        IsKidMode = false;
+        _settings.KidMode = false;
+        _uiMode.SetKidMode(false);
+        _settingsService.Save(_settings);
         IsDemoMode = _settings.DemoMode;
         if (IsDemoMode)
         {
@@ -215,6 +221,7 @@ public partial class MainViewModel : ViewModelBase
         var snapshots = new SnapshotsViewModel(_logger, _snapshots, _flasher, _deviceSettings, _deviceState, _tuningState, _telemetry);
         var selfTest = new SelfTestViewModel(_logger, _selfTest, _snapshots, _telemetry, _deviceState);
         var phoneDashboard = new PhoneDashboardViewModel(_logger, _dashboardHost, _settingsService, _settings);
+        var ollama = new OllamaViewModel(_logger, _ollama, _screenCapture, _settingsService, _settings);
         var lab = new LabToolsViewModel(_logger, _hid, _deviceState, _calibration, _settingsService, _settings);
         var diagnostics = new DiagnosticsViewModel(_logger, _diagnostics, _settingsService, _settings, _deviceState, _telemetry, _tuningState, _wizardState);
 
@@ -231,8 +238,9 @@ public partial class MainViewModel : ViewModelBase
         NavigationItems.Add(new NavItem { Key = "snapshots", Title = "Snapshots", TargetViewModel = snapshots, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[10]) });
         NavigationItems.Add(new NavItem { Key = "selftest", Title = "Self-Test", TargetViewModel = selfTest, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[11]) });
         NavigationItems.Add(new NavItem { Key = "phone", Title = "Phone Dashboard", TargetViewModel = phoneDashboard, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[12]) });
-        NavigationItems.Add(new NavItem { Key = "lab", Title = "Lab Tools", TargetViewModel = lab, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[13]) });
-        NavigationItems.Add(new NavItem { Key = "diagnostics", Title = "Diagnostics", TargetViewModel = diagnostics, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[14]) });
+        NavigationItems.Add(new NavItem { Key = "ollama", Title = "AI Side View", TargetViewModel = ollama, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[13]) });
+        NavigationItems.Add(new NavItem { Key = "lab", Title = "Lab Tools", TargetViewModel = lab, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[14]) });
+        NavigationItems.Add(new NavItem { Key = "diagnostics", Title = "Diagnostics", TargetViewModel = diagnostics, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[15]) });
 
         SelectedNavItem = NavigationItems[0];
 

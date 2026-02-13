@@ -92,7 +92,7 @@ public class DeviceManagerService
         if (config != null)
         {
             _protocol.UpdateEffStateCache(config.DesktopEffectsByte);
-            _protocol.SetTelemetryEnabledAsync(true).ConfigureAwait(false);
+            _ = _protocol.SetTelemetryEnabledAsync(true);
         }
 
         return info;

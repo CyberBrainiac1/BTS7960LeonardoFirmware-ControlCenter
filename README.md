@@ -18,6 +18,7 @@ Compared to the original Arduino-FFB-wheel repo, this repo adds:
 - snapshots/timeline + revert
 - profile gallery with export/import
 - phone dashboard host (local LAN URL + QR)
+- local Ollama AI side-view (chat + optional screen capture context)
 - firmware protocol extras in `FirmwareExtras/` (optional, capability-gated)
 
 ## Repository
@@ -99,7 +100,13 @@ Check crash log:
 
 ### Flashing fails on Leonardo
 - Close Arduino IDE / serial monitors / legacy GUI.
+- Use **Reset Board** from Firmware page to force bootloader reset.
 - Retry with manual recovery mode and press RESET when prompted.
+
+### Ollama side view does not connect
+- Start Ollama first: `ollama serve`
+- Verify endpoint in app: `http://localhost:11434`
+- Pull at least one model (vision-capable model recommended for screen Q&A)
 
 ## License / Credits
 Please retain attribution to original firmware authors in downstream forks.

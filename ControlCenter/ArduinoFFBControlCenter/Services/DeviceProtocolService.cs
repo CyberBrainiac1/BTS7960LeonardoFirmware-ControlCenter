@@ -126,9 +126,10 @@ public class DeviceProtocolService
         await ExecuteWithTelemetrySuppressedAsync(() => _serial.SendCommandAsync("C", s => s.Trim() == "1" || s.Trim() == "0"));
     }
 
-    public async Task CalibrateAsync()
+    public Task CalibrateAsync()
     {
         _serial.SendCommandNoWait("R");
+        return Task.CompletedTask;
     }
 
     public async Task SaveAsync()
@@ -151,10 +152,11 @@ public class DeviceProtocolService
         await ExecuteWithTelemetrySuppressedAsync(() => _serial.SendCommandAsync($"B {value}", s => s.Trim() == "1"));
     }
 
-    public async Task SetEffStateAsync(int effState)
+    public Task SetEffStateAsync(int effState)
     {
         _serial.SendCommandNoWait($"E {effState}");
         EffStateCache = effState;
+        return Task.CompletedTask;
     }
 
     public async Task SetTelemetryEnabledAsync(bool enable)

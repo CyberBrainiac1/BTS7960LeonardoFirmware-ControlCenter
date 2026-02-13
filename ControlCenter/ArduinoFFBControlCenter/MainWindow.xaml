@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:ArduinoFFBControlCenter.ViewModels"
         mc:Ignorable="d"
-        Title="Arduino FFB Control Center" Height="820" Width="1280" Icon="Assets/AppIcon.png"
+        Title="Arduino FFB Control Center" Height="820" Width="1280" Icon="pack://application:,,,/Assets/AppIcon.png"
         Background="{StaticResource AppBackground}"
         WindowStartupLocation="CenterScreen">
 
@@ -58,8 +58,7 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center" helpers:PanelSpacing.Spacing="8">
-                        <CheckBox Content="Beginner Mode" IsChecked="{Binding IsBeginnerMode}" Foreground="{StaticResource MutedText}" />
-                        <CheckBox Content="Kid Mode" IsChecked="{Binding IsKidMode}" Foreground="{StaticResource MutedText}" />
+                        <CheckBox Content="Advanced Mode" IsChecked="{Binding IsBeginnerMode, Converter={StaticResource InverseBool}}" Foreground="{StaticResource MutedText}" />
                         <CheckBox Content="Demo Mode" IsChecked="{Binding IsDemoMode}" Foreground="{StaticResource MutedText}" />
                         <ComboBox Width="160" ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}" />
                         <Button Content="Scan" Command="{Binding ScanPortsCommand}" Style="{StaticResource PrimaryButton}" />

@@ -24,7 +24,8 @@ public partial class SetupWizardViewModel : ViewModelBase
     private readonly AppSettings _appSettings;
     private readonly CustomFirmwareBuilderService _builder;
     private readonly SnapshotService _snapshots;
-    private WizardState _state;
+    private WizardState _state = new();
+    private bool _isInitializing = true;
 
     public ObservableCollection<string> Ports { get; } = new();
     public ObservableCollection<FirmwareHexInfo> FirmwareOptions { get; } = new();
@@ -121,6 +122,7 @@ public partial class SetupWizardViewModel : ViewModelBase
 
         UpdateStepText();
         UpdateWiringSummary();
+        _isInitializing = false;
     }
 
     [RelayCommand]
@@ -253,6 +255,11 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     private void SaveState()
     {
+        if (_isInitializing || _state == null)
+        {
+            return;
+        }
+
         _state.LastStep = StepIndex;
         _state.SelectedPort = SelectedPort;
         _state.SelectedFirmwarePath = SelectedFirmware?.Path;

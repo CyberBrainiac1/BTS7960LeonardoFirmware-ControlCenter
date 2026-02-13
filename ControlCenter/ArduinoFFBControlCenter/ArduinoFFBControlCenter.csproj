@@ -34,4 +34,16 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Remove="Assets\\AppIcon.png" />
+    <Content Remove="Assets\\Wizard\\arduinoLeoPinout.jpg" />
+    <Content Remove="Assets\\Wizard\\BTS7960-Pinout.jpg" />
+    <Content Remove="Assets\\Wizard\\bts7960_wiring_diagram.png" />
+
+    <Resource Include="Assets\\AppIcon.png" />
+    <Resource Include="Assets\\Wizard\\arduinoLeoPinout.jpg" />
+    <Resource Include="Assets\\Wizard\\BTS7960-Pinout.jpg" />
+    <Resource Include="Assets\\Wizard\\bts7960_wiring_diagram.png" />
+  </ItemGroup>
+
 </Project>

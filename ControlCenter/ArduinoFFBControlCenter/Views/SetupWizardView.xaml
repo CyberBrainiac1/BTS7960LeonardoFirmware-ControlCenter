@@ -58,7 +58,7 @@
                             <Button Content="Use My Wheel Developer Preset" Command="{Binding UseMyWheelPresetCommand}" Style="{StaticResource PrimaryButton}" Margin="0,8,0,0" />
                         </StackPanel>
                         <Border Grid.Column="1" Padding="8" Background="{StaticResource CardBackground}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="10">
-                            <Image Source="Assets/Wizard/arduinoLeoPinout.jpg" Stretch="Uniform" />
+                            <Image Source="pack://application:,,,/Assets/Wizard/arduinoLeoPinout.jpg" Stretch="Uniform" />
                         </Border>
                     </Grid>
                     <ItemsControl ItemsSource="{Binding WiringWarnings}" Margin="0,8,0,0">
@@ -100,7 +100,7 @@
                             <CheckBox Content="Common ground between Arduino and motor power" IsChecked="{Binding CommonGround}" />
                         </StackPanel>
                         <Border Grid.Column="1" Padding="8" Background="{StaticResource CardBackground}" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="10">
-                            <Image Source="Assets/Wizard/bts7960_wiring_diagram.png" Stretch="Uniform" />
+                            <Image Source="pack://application:,,,/Assets/Wizard/bts7960_wiring_diagram.png" Stretch="Uniform" />
                         </Border>
                     </Grid>
                     <TextBlock Text="Wiring Summary" FontWeight="SemiBold" Margin="0,10,0,0" />

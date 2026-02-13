@@ -155,7 +155,7 @@ public class DeviceSettingsService
             return Task.CompletedTask;
         }
 
-        _protocol.CalibrateAsync();
+        _ = _protocol.CalibrateAsync();
         return Task.Delay(200, ct);
     }
 
