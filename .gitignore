@@ -1,0 +1,29 @@
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+**/artifacts/
+
+# Installer outputs
+ControlCenter/dist/
+ControlCenter/Installer/PackageRoot/
+
+# IDE
+.vs/
+*.user
+*.suo
+*.userosscache
+
+# Logs
+*.log
+
+# Packages/archives
+*.zip
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+
+# OS
+Thumbs.db
+Desktop.ini
