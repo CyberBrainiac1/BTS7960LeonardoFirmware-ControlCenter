@@ -16,7 +16,11 @@ public partial class TelemetryViewModel : ViewModelBase
 {
     private readonly TelemetryService _telemetry;
     private readonly DeviceStateService _deviceState;
+    private readonly HidWheelService _hid;
+    private readonly PedalTelemetryService _pedals;
+    private readonly TuningStateService _tuningState;
     private readonly DispatcherTimer _timer;
+    private const double PedalBarMaxHeight = 120;
 
     [ObservableProperty] private PointCollection anglePoints = new();
     [ObservableProperty] private PointCollection torquePoints = new();
@@ -36,10 +40,27 @@ public partial class TelemetryViewModel : ViewModelBase
     [ObservableProperty] private string telemetryNotice = string.Empty;
     [ObservableProperty] private string insights = string.Empty;
 
-    public TelemetryViewModel(LoggerService logger, TelemetryService telemetry, DeviceStateService deviceState)
+    [ObservableProperty] private double wheelVisualAngleDeg;
+    [ObservableProperty] private string wheelAngleText = "0.0°";
+    [ObservableProperty] private string mirrorStatus = "Connect a wheel to show live mirror.";
+
+    [ObservableProperty] private double throttlePercent;
+    [ObservableProperty] private double brakePercent;
+    [ObservableProperty] private double clutchPercent;
+    [ObservableProperty] private double throttleBarHeight;
+    [ObservableProperty] private double brakeBarHeight;
+    [ObservableProperty] private double clutchBarHeight;
+    [ObservableProperty] private int throttleRaw;
+    [ObservableProperty] private int brakeRaw;
+    [ObservableProperty] private int clutchRaw;
+
+    public TelemetryViewModel(LoggerService logger, TelemetryService telemetry, DeviceStateService deviceState, HidWheelService hid, PedalTelemetryService pedals, TuningStateService tuningState)
     {
         _telemetry = telemetry;
         _deviceState = deviceState;
+        _hid = hid;
+        _pedals = pedals;
+        _tuningState = tuningState;
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
         _timer.Tick += (_, __) => RefreshPoints();
         _timer.Start();
@@ -79,6 +100,7 @@ public partial class TelemetryViewModel : ViewModelBase
         var samples = _telemetry.GetSamplesSnapshot();
         if (samples.Count == 0)
         {
+            UpdateHardwareMirror(samples);
             return;
         }
 
@@ -118,6 +140,7 @@ public partial class TelemetryViewModel : ViewModelBase
         LoopDtPoints = dtPts;
 
         Analyze(samples);
+        UpdateHardwareMirror(samples);
     }
 
     private void OnStatsUpdated(TelemetryStats stats)
@@ -187,6 +210,7 @@ public partial class TelemetryViewModel : ViewModelBase
         {
             CanShowTelemetry = false;
             TelemetryNotice = "Connect a device to see telemetry.";
+            MirrorStatus = "Connect a wheel to show live mirror.";
             return;
         }
 
@@ -200,6 +224,59 @@ public partial class TelemetryViewModel : ViewModelBase
             CanShowTelemetry = true;
             TelemetryNotice = string.Empty;
         }
+
+        UpdateHardwareMirror(_telemetry.GetSamplesSnapshot());
+    }
+
+    private void UpdateHardwareMirror(IReadOnlyList<TelemetrySample> samples)
+    {
+        if (!_hid.IsAttached)
+        {
+            MirrorStatus = "HID not attached. Connect the wheel to show live mirror.";
+        }
+        else if (CanShowTelemetry)
+        {
+            MirrorStatus = "Live mirror active (wheel + telemetry).";
+        }
+        else
+        {
+            MirrorStatus = "Live mirror active (wheel HID only).";
+        }
+
+        var rotationDeg = _tuningState.CurrentConfig?.RotationDeg ?? 900;
+        rotationDeg = Math.Clamp(rotationDeg, 180, 1800);
+
+        var lastRaw = samples.Count > 0
+            ? (int)Math.Round(samples[^1].Angle)
+            : (int)Math.Round(_hid.WheelAngle);
+
+        AxisRange range;
+        if (samples.Count > 8)
+        {
+            var recentRaw = samples.TakeLast(200).Select(s => (int)Math.Round(s.Angle));
+            range = AxisNormalization.DetectRange(recentRaw);
+        }
+        else
+        {
+            range = new AxisRange(false, 0, 65535);
+        }
+
+        var normalized = Math.Clamp(AxisNormalization.Normalize(lastRaw, range), -1.0, 1.0);
+        WheelVisualAngleDeg = normalized * (rotationDeg / 2.0);
+        WheelAngleText = $"{WheelVisualAngleDeg:0.0}°";
+
+        var pedal = _pedals.GetSample();
+        ThrottleRaw = pedal.RawThrottle;
+        BrakeRaw = pedal.RawBrake;
+        ClutchRaw = pedal.RawClutch;
+
+        ThrottlePercent = Math.Clamp((pedal.Throttle ?? 0) * 100.0, 0, 100);
+        BrakePercent = Math.Clamp((pedal.Brake ?? 0) * 100.0, 0, 100);
+        ClutchPercent = Math.Clamp((pedal.Clutch ?? 0) * 100.0, 0, 100);
+
+        ThrottleBarHeight = PedalBarMaxHeight * (ThrottlePercent / 100.0);
+        BrakeBarHeight = PedalBarMaxHeight * (BrakePercent / 100.0);
+        ClutchBarHeight = PedalBarMaxHeight * (ClutchPercent / 100.0);
     }
 }
 

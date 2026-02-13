@@ -211,7 +211,7 @@ public partial class MainViewModel : ViewModelBase
         var buttons = new ButtonsViewModel(_logger, _hid, _deviceState);
         var pedals = new PedalsViewModel(_pedals, _hid, _wizardState, _settings);
         var profiles = new ProfilesViewModel(_logger, _profiles, _deviceSettings, _deviceState, _tuningState, _settingsService, _settings, _wheelProfiles, _snapshots, _dashboardLayout, _flasher);
-        var telemetry = new TelemetryViewModel(_logger, _telemetry, _deviceState);
+        var telemetry = new TelemetryViewModel(_logger, _telemetry, _deviceState, _hid, _pedals, _tuningState);
         var snapshots = new SnapshotsViewModel(_logger, _snapshots, _flasher, _deviceSettings, _deviceState, _tuningState, _telemetry);
         var selfTest = new SelfTestViewModel(_logger, _selfTest, _snapshots, _telemetry, _deviceState);
         var phoneDashboard = new PhoneDashboardViewModel(_logger, _dashboardHost, _settingsService, _settings);

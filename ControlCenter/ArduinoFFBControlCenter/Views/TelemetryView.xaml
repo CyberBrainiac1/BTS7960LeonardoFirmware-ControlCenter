@@ -5,6 +5,87 @@
     <StackPanel Margin="24" helpers:PanelSpacing.Spacing="12">
         <Border Style="{StaticResource Card}">
             <StackPanel>
+                <TextBlock Text="Testing Dashboard" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Live wheel + pedals mirror (matches your current hardware state)." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
+                <TextBlock Text="{Binding MirrorStatus}" Foreground="{StaticResource MutedText}" Margin="0,2,0,10" />
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.25*" />
+                        <ColumnDefinition Width="1.75*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Background="#0F151C" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,12,0">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="Wheel" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <Grid Width="200" Height="200" Margin="0,8,0,0">
+                                <Ellipse Stroke="#4A5C75" StrokeThickness="8" Margin="10" />
+                                <Ellipse Stroke="#3A4A60" StrokeThickness="4" Margin="40" />
+                                <Canvas Width="200" Height="200" RenderTransformOrigin="0.5,0.5">
+                                    <Canvas.RenderTransform>
+                                        <RotateTransform Angle="{Binding WheelVisualAngleDeg}" />
+                                    </Canvas.RenderTransform>
+                                    <Line X1="100" Y1="100" X2="100" Y2="28" Stroke="{StaticResource AccentBrush}" StrokeThickness="5" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                    <Line X1="100" Y1="100" X2="36" Y2="100" Stroke="{StaticResource Accent2}" StrokeThickness="3" />
+                                    <Line X1="100" Y1="100" X2="164" Y2="100" Stroke="{StaticResource Accent2}" StrokeThickness="3" />
+                                    <Line X1="100" Y1="100" X2="100" Y2="170" Stroke="{StaticResource Accent2}" StrokeThickness="3" />
+                                </Canvas>
+                            </Grid>
+                            <TextBlock Text="{Binding WheelAngleText}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Background="#0F151C" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="12" Padding="10">
+                        <StackPanel>
+                            <TextBlock Text="Pedals" FontWeight="SemiBold" />
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                    <TextBlock Text="Throttle" Foreground="{StaticResource MutedText}" HorizontalAlignment="Center" />
+                                    <Border Margin="0,6,0,0" Padding="6" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="8">
+                                        <Grid Width="48" Height="120" Background="#132033">
+                                            <Rectangle Fill="#2AB7FF" RadiusX="6" RadiusY="6" VerticalAlignment="Bottom" Height="{Binding ThrottleBarHeight}" />
+                                        </Grid>
+                                    </Border>
+                                    <TextBlock Text="{Binding ThrottlePercent, StringFormat={}{0:0}%}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Text="{Binding ThrottleRaw, StringFormat=Raw {0}}" Foreground="{StaticResource MutedText}" HorizontalAlignment="Center" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="Brake" Foreground="{StaticResource MutedText}" HorizontalAlignment="Center" />
+                                    <Border Margin="0,6,0,0" Padding="6" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="8">
+                                        <Grid Width="48" Height="120" Background="#241A14">
+                                            <Rectangle Fill="#FF7A1A" RadiusX="6" RadiusY="6" VerticalAlignment="Bottom" Height="{Binding BrakeBarHeight}" />
+                                        </Grid>
+                                    </Border>
+                                    <TextBlock Text="{Binding BrakePercent, StringFormat={}{0:0}%}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Text="{Binding BrakeRaw, StringFormat=Raw {0}}" Foreground="{StaticResource MutedText}" HorizontalAlignment="Center" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="Clutch" Foreground="{StaticResource MutedText}" HorizontalAlignment="Center" />
+                                    <Border Margin="0,6,0,0" Padding="6" BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="8">
+                                        <Grid Width="48" Height="120" Background="#1A2518">
+                                            <Rectangle Fill="#2ECC71" RadiusX="6" RadiusY="6" VerticalAlignment="Bottom" Height="{Binding ClutchBarHeight}" />
+                                        </Grid>
+                                    </Border>
+                                    <TextBlock Text="{Binding ClutchPercent, StringFormat={}{0:0}%}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                    <TextBlock Text="{Binding ClutchRaw, StringFormat=Raw {0}}" Foreground="{StaticResource MutedText}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
                 <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
                     <TextBlock Text="Telemetry" FontSize="16" FontWeight="SemiBold" />
                     <Button Content="Export Last 60s CSV" Command="{Binding ExportLast60sCommand}" IsEnabled="{Binding CanShowTelemetry}" />
