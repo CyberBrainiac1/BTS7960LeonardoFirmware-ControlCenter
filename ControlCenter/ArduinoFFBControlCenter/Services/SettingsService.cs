@@ -22,9 +22,23 @@ public class AppSettings
     public double? WindowHeight { get; set; }
     public double? WindowLeft { get; set; }
     public double? WindowTop { get; set; }
-    public FfbConfig? LastTuningConfig { get; set; }
-    public FfbCurveSettings? LastCurve { get; set; }
-    public AdvancedTuningSettings? LastAdvanced { get; set; }
+    public FfbConfig? LastTuningConfig { get; set; } = new();
+    public FfbCurveSettings? LastCurve { get; set; } = new();
+    public AdvancedTuningSettings? LastAdvanced { get; set; } = new AdvancedTuningSettings
+    {
+        SteeringScale = 100,
+        MinForceBoost = 0,
+        SlewRate = 0,
+        Smoothing = 0,
+        NotchFilter = 0,
+        LowPassFilter = 0,
+        SoftLockStrength = 80,
+        SoftLockRange = 100,
+        OscillationGuardEnabled = true,
+        OscillationGuardStrength = 20,
+        DampingBoost = 10,
+        FrictionBoost = 10
+    };
     public CalibrationRecord? LastCalibration { get; set; }
     public bool BypassCalibrationWarning { get; set; }
     public bool DashboardEnabled { get; set; }
@@ -46,18 +60,47 @@ public class SettingsService
 
     public AppSettings Load()
     {
+        AppSettings settings;
         if (!File.Exists(AppPaths.SettingsFile))
         {
-            return new AppSettings();
+            settings = new AppSettings();
+            EnsureDefaults(settings);
+            return settings;
         }
         var json = File.ReadAllText(AppPaths.SettingsFile);
-        return JsonSerializer.Deserialize<AppSettings>(json, _options) ?? new AppSettings();
+        settings = JsonSerializer.Deserialize<AppSettings>(json, _options) ?? new AppSettings();
+        EnsureDefaults(settings);
+        return settings;
     }
 
     public void Save(AppSettings settings)
     {
+        EnsureDefaults(settings);
         var json = JsonSerializer.Serialize(settings, _options);
         File.WriteAllText(AppPaths.SettingsFile, json);
         Saved?.Invoke(settings);
+    }
+
+    private static void EnsureDefaults(AppSettings settings)
+    {
+        settings.LastTuningConfig ??= new FfbConfig();
+        settings.LastCurve ??= new FfbCurveSettings();
+        settings.LastAdvanced ??= new AdvancedTuningSettings
+        {
+            SteeringScale = 100,
+            SoftLockStrength = 80,
+            SoftLockRange = 100,
+            OscillationGuardEnabled = true,
+            OscillationGuardStrength = 20,
+            DampingBoost = 10,
+            FrictionBoost = 10
+        };
+        settings.PedalMapping ??= new PedalAxisMapping();
+        settings.PedalCalibration ??= new PedalCalibration();
+
+        if (settings.DashboardPort <= 0 || settings.DashboardPort > 65535)
+        {
+            settings.DashboardPort = 10500;
+        }
     }
 }

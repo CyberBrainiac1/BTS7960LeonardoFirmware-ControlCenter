@@ -2,14 +2,14 @@ namespace ArduinoFFBControlCenter.Models;
 
 public class FfbConfig
 {
-    public int RotationDeg { get; set; } = 1080;
+    public int RotationDeg { get; set; } = 900;
     public int GeneralGain { get; set; } = 100;
-    public int DamperGain { get; set; } = 50;
-    public int FrictionGain { get; set; } = 50;
+    public int DamperGain { get; set; } = 40;
+    public int FrictionGain { get; set; } = 40;
     public int ConstantGain { get; set; } = 100;
     public int PeriodicGain { get; set; } = 100;
-    public int SpringGain { get; set; } = 100;
-    public int InertiaGain { get; set; } = 50;
+    public int SpringGain { get; set; } = 90;
+    public int InertiaGain { get; set; } = 30;
     public int CenterGain { get; set; } = 70;
     public int StopGain { get; set; } = 100;
     public int MinTorque { get; set; } = 0;

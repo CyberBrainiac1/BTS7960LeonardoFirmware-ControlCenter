@@ -35,6 +35,7 @@
 
             <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
                 <Button Content="Flash Selected" Command="{Binding FlashSelectedCommand}" Style="{StaticResource AccentButton}" IsEnabled="{Binding IsFlashing, Converter={StaticResource InverseBool}}" />
+                <Button Content="Reset Board" Command="{Binding ResetBoardCommand}" IsEnabled="{Binding IsFlashing, Converter={StaticResource InverseBool}}" />
                 <Button Content="Factory Restore" Command="{Binding FactoryRestoreCommand}" IsEnabled="{Binding IsFlashing, Converter={StaticResource InverseBool}}" />
                 <Button Content="Manual Recovery" Command="{Binding ManualRecoveryCommand}" IsEnabled="{Binding IsFlashing, Converter={StaticResource InverseBool}}" />
                 <Button Content="Open Legacy GUI" Command="{Binding OpenLegacyGuiCommand}" />

@@ -7,14 +7,14 @@ public class WiringConfig
     public string ProfileName { get; set; } = "Default";
 
     // BTS7960 control pins
-    public string? RpwmPin { get; set; }
-    public string? LpwmPin { get; set; }
-    public string? REnPin { get; set; }
-    public string? LEnPin { get; set; }
+    public string? RpwmPin { get; set; } = "D9";
+    public string? LpwmPin { get; set; } = "D10";
+    public string? REnPin { get; set; } = "D7";
+    public string? LEnPin { get; set; } = "D8";
 
     // Encoder
-    public string? EncoderAPin { get; set; }
-    public string? EncoderBPin { get; set; }
+    public string? EncoderAPin { get; set; } = "D2";
+    public string? EncoderBPin { get; set; } = "D3";
 
     // Optional controls
     public string? EStopPin { get; set; }
@@ -24,9 +24,9 @@ public class WiringConfig
     public string? ShifterYPin { get; set; }
 
     // Pedals (analog)
-    public string? ThrottlePin { get; set; }
-    public string? BrakePin { get; set; }
-    public string? ClutchPin { get; set; }
+    public string? ThrottlePin { get; set; } = "A0";
+    public string? BrakePin { get; set; } = "A1";
+    public string? ClutchPin { get; set; } = "A2";
 
     // Wiring confirmations
     public string MotorPlusTerminal { get; set; } = "M+";

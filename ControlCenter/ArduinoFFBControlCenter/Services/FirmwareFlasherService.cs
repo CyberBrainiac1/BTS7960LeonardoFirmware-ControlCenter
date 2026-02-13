@@ -23,6 +23,45 @@ public class FirmwareFlasherService
 
     public bool ToolsAvailable => File.Exists(AvrDudePath) && File.Exists(AvrDudeConf);
 
+    public async Task<FlashResult> ResetBoardAsync(string port, IProgress<string> progress, CancellationToken ct)
+    {
+        var result = new FlashResult();
+        if (!SerialPort.GetPortNames().Any(p => string.Equals(p, port, StringComparison.OrdinalIgnoreCase)))
+        {
+            result.Success = false;
+            result.ErrorType = FlashErrorType.PortNotFound;
+            result.UserMessage = $"Port {port} not found.";
+            result.SuggestedAction = "Reconnect the device or rescan ports.";
+            return result;
+        }
+
+        if (IsPortBusy(port, out var busyReason))
+        {
+            result.Success = false;
+            result.ErrorType = FlashErrorType.PortBusy;
+            result.UserMessage = "COM port is busy.";
+            result.SuggestedAction = busyReason;
+            return result;
+        }
+
+        var bootPort = await EnterBootloaderAsync(port, progress, ct);
+        if (bootPort == null)
+        {
+            result.Success = false;
+            result.ErrorType = FlashErrorType.BootloaderNotDetected;
+            result.UserMessage = "Reset command sent, but bootloader port was not detected.";
+            result.SuggestedAction = "Press reset twice quickly and try again.";
+            return result;
+        }
+
+        result.Success = true;
+        result.ErrorType = FlashErrorType.None;
+        result.BootloaderPort = bootPort;
+        result.UserMessage = "Board reset complete.";
+        result.SuggestedAction = "Wait a few seconds for the normal COM port to return.";
+        return result;
+    }
+
     public async Task<FlashResult> FlashWithRetryAsync(string hexPath, string port, IProgress<string> progress, CancellationToken ct, bool skipReset = false)
     {
         var first = await FlashInternalAsync(hexPath, port, progress, ct, skipReset);

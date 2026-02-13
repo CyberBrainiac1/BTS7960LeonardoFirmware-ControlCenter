@@ -234,6 +234,41 @@ public partial class FirmwareViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task ResetBoardAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedPort))
+        {
+            _logger.Warn("Select a COM port first.");
+            return;
+        }
+
+        if (_deviceManager.IsConnected)
+        {
+            _deviceManager.Disconnect();
+            await Task.Delay(150);
+        }
+
+        IsFlashing = true;
+        FlashStatus = "Resetting board...";
+        FlashHint = string.Empty;
+        FlashLog = string.Empty;
+        var progress = new Progress<string>(line => FlashLog += line + "\n");
+
+        var result = await _flasher.ResetBoardAsync(SelectedPort, progress, CancellationToken.None);
+        IsFlashing = false;
+        FlashStatus = result.UserMessage;
+        FlashHint = result.Success
+            ? $"Bootloader detected on {result.BootloaderPort}. Wait for the normal COM port to reappear."
+            : result.SuggestedAction;
+
+        ScanPorts();
+        if (!string.IsNullOrWhiteSpace(_settings.LastPort) && AvailablePorts.Contains(_settings.LastPort))
+        {
+            SelectedPort = _settings.LastPort;
+        }
+    }
+
+    [RelayCommand]
     private async Task RollbackAsync()
     {
         if (string.IsNullOrWhiteSpace(_settings.LastKnownGoodHex) || !File.Exists(_settings.LastKnownGoodHex))
