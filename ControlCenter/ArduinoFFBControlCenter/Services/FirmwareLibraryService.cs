@@ -15,12 +15,12 @@ public class FirmwareLibraryService
 
     public List<FirmwareHexInfo> LoadLibrary()
     {
-        if (!Directory.Exists(_libraryRoot))
+        var allHex = LoadHexCandidates().Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (allHex.Count == 0)
         {
             return new List<FirmwareHexInfo>();
         }
 
-        var allHex = Directory.GetFiles(_libraryRoot, "*.hex", SearchOption.AllDirectories).ToList();
         var recommendedPath = EnsureRecommendedHex(allHex);
 
         var list = new List<FirmwareHexInfo>();
@@ -40,7 +40,7 @@ public class FirmwareLibraryService
                      .OrderBy(f => Path.GetFileNameWithoutExtension(f)))
         {
             var name = Path.GetFileNameWithoutExtension(file);
-            var rel = Path.GetRelativePath(_libraryRoot, file);
+            var rel = TryGetDisplayPath(file);
             list.Add(new FirmwareHexInfo
             {
                 Name = name,
@@ -90,5 +90,59 @@ public class FirmwareLibraryService
 
         File.Copy(source, recommendedPath, true);
         return recommendedPath;
+    }
+
+    private IEnumerable<string> LoadHexCandidates()
+    {
+        if (Directory.Exists(_libraryRoot))
+        {
+            foreach (var file in Directory.GetFiles(_libraryRoot, "*.hex", SearchOption.AllDirectories))
+            {
+                yield return file;
+            }
+        }
+
+        foreach (var path in GetExamplesFirmwarePaths())
+        {
+            if (!Directory.Exists(path))
+            {
+                continue;
+            }
+
+            foreach (var file in Directory.GetFiles(path, "*.hex", SearchOption.AllDirectories))
+            {
+                yield return file;
+            }
+        }
+    }
+
+    private static IEnumerable<string> GetExamplesFirmwarePaths()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(Environment.CurrentDirectory, "Examples", "Arduino-FFB-wheel-master", "Arduino-FFB-wheel-master", "brWheel_my", "leonardo hex"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Examples", "Arduino-FFB-wheel-master", "Arduino-FFB-wheel-master", "brWheel_my", "leonardo hex"))
+        };
+
+        foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            yield return candidate;
+        }
+    }
+
+    private string TryGetDisplayPath(string fullPath)
+    {
+        if (fullPath.StartsWith(_libraryRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.GetRelativePath(_libraryRoot, fullPath);
+        }
+
+        var exampleRoot = Path.Combine(Environment.CurrentDirectory, "Examples");
+        if (fullPath.StartsWith(exampleRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            return "Examples/" + Path.GetRelativePath(exampleRoot, fullPath).Replace('\\', '/');
+        }
+
+        return fullPath;
     }
 }

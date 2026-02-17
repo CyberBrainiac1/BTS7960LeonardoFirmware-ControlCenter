@@ -142,6 +142,13 @@ public partial class SetupWizardViewModel : ViewModelBase
         ApplyState(_state);
         ApplyFixedPinoutDefaults();
 
+        if (IsPinMappingLocked)
+        {
+            _appSettings.SendAsInoMode = false;
+            _appSettings.ForcePinoutBuild = false;
+            _settingsService.Save(_appSettings);
+        }
+
         UpdateStepText();
         UpdateWiringSummary();
         _isInitializing = false;
@@ -317,6 +324,7 @@ public partial class SetupWizardViewModel : ViewModelBase
         CommonGround = true;
         LogicVccConnected = true;
         LogicGndConnected = true;
+        SelectedFirmware = _library.GetRecommended() ?? SelectedFirmware;
     }
 
     private void SaveState()
