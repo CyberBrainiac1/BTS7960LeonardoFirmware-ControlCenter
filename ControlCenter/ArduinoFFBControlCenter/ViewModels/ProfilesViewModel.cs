@@ -435,7 +435,8 @@ public partial class ProfilesViewModel : ViewModelBase
     private List<string> ParseGameExecutables(string input)
     {
         return input.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(s => s.Trim().TrimEnd(".exe".ToCharArray()))
+            .Select(s => s.Trim())
+            .Select(s => s.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? s[..^4] : s)
             .Where(s => s.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();

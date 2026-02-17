@@ -231,6 +231,73 @@ public class CalibrationService
         return result;
     }
 
+    public async Task<CalibrationStepResult> RunMotorRotationCalibrationAsync(CancellationToken ct)
+    {
+        var result = new CalibrationStepResult();
+        var device = _deviceState.CurrentDevice;
+        if (device == null)
+        {
+            result.Success = false;
+            result.Message = "No device connected.";
+            return result;
+        }
+
+        var caps = _caps.GetCapabilities(device);
+        if (!caps.SupportsSerialConfig && !device.IsDemo)
+        {
+            result.Success = false;
+            result.Message = "This firmware does not support motor-assisted calibration over serial.";
+            return result;
+        }
+
+        if (device.IsDemo)
+        {
+            await Task.Delay(500, ct);
+            result.Success = true;
+            result.Message = "Demo mode: motor-assisted calibration simulated.";
+            return result;
+        }
+
+        // Trigger firmware-side encoder calibration routine (R command).
+        await _deviceSettings.CalibrateAsync(ct);
+
+        // Give firmware a short head start before sampling encoder movement.
+        await Task.Delay(150, ct);
+
+        if (!_hidTelemetry.IsAttached)
+        {
+            result.Success = true;
+            result.Message = "Calibration command sent. HID feedback unavailable, so movement could not be verified.";
+            return result;
+        }
+
+        var raw = await _hidTelemetry.SampleRawAsync(TimeSpan.FromSeconds(3.2), ct);
+        if (raw.Count < 8)
+        {
+            result.Success = false;
+            result.Message = "Not enough encoder samples captured.";
+            return result;
+        }
+
+        var delta = raw.Last() - raw.First();
+        var span = raw.Max() - raw.Min();
+        var window = _hidTelemetry.BuildWindow(raw.ToList());
+        result.Samples = window;
+        result.DetectedValue = span;
+
+        if (span < 300)
+        {
+            result.Success = false;
+            result.Message = "Motor calibration ran but no encoder movement was detected. Check motor power, enable pins, and wiring.";
+            return result;
+        }
+
+        var direction = delta >= 0 ? "right/increasing" : "left/decreasing";
+        result.Success = true;
+        result.Message = $"Motor-assisted calibration complete. Encoder span: {span}, direction: {direction}.";
+        return result;
+    }
+
     public void UpdateCalibrationRecord(DeviceInfo device, double centerNormalized, bool storedOnWheel, int? rotationDeg = null, bool? inverted = null, int? encoderCpr = null)
     {
         var record = _settings.LastCalibration ?? new CalibrationRecord();

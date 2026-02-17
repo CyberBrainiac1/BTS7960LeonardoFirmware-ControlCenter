@@ -3,15 +3,24 @@
 
 #include <stdint.h>
 
-#if defined(ARDUINO_ARCH_RP2040)
-// AVR core defines these typedefs; provide them for RP2040.
+// Common fixed-width aliases used across legacy AVR and RP2040 code paths.
+// Keep them available for all architectures so standalone modules compile
+// consistently when built outside the original legacy toolchain.
+#ifndef BRWHEEL_FIXED_TYPES_DEFINED
+#define BRWHEEL_FIXED_TYPES_DEFINED
 typedef int8_t s8;
+#if !defined(__USBAPI__)
 typedef uint8_t u8;
+#endif
 typedef int8_t b8;
 typedef int16_t s16;
+#if !defined(__USBAPI__)
 typedef uint16_t u16;
+#endif
 typedef int32_t s32;
+#if !defined(__USBAPI__)
 typedef uint32_t u32;
+#endif
 typedef float f32;
 #endif
 

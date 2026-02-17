@@ -3,46 +3,109 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Grid Margin="24">
+        <Grid Margin="{StaticResource PagePadding}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="2*" />
                 <ColumnDefinition Width="3*" />
             </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
 
-            <Border Grid.Column="0" Grid.Row="0" Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="Snapshot Timeline" FontSize="16" FontWeight="SemiBold" />
-                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
-                        <ComboBox Width="160" ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" />
+            <Border Grid.Column="0" Style="{StaticResource Card}">
+                <StackPanel helpers:PanelSpacing.Spacing="10">
+                    <TextBlock Text="Snapshot Timeline" FontSize="20" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                        <ComboBox Style="{StaticResource FloatingComboBox}"
+                                  helpers:FloatingField.Label="Filter"
+                                  Width="170"
+                                  ItemsSource="{Binding Filters}"
+                                  SelectedItem="{Binding SelectedFilter}" />
                         <Button Content="Refresh" Command="{Binding RefreshCommand}" />
                         <Button Content="Manual Snapshot" Command="{Binding CreateManualSnapshotCommand}" />
                     </StackPanel>
-                    <ListBox ItemsSource="{Binding SnapshotList}" SelectedItem="{Binding SelectedSnapshot}" DisplayMemberPath="Label" Height="260" Margin="0,8,0,0" />
-                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
-                        <Button Content="Revert Settings" Command="{Binding RevertSettingsCommand}" Style="{StaticResource PrimaryButton}" />
-                        <Button Content="Revert Firmware" Command="{Binding RevertFirmwareCommand}" />
-                        <Button Content="Revert Both" Command="{Binding RevertBothCommand}" />
-                    </StackPanel>
+
+                    <ListBox ItemsSource="{Binding SnapshotList}" SelectedItem="{Binding SelectedSnapshot}" Height="560">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="10" Padding="10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="26" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0"
+                                                   FontFamily="Segoe Fluent Icons"
+                                                   Foreground="{StaticResource AccentBrush}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE8A5;" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="Flash">
+                                                            <Setter Property="Text" Value="&#xE9CA;" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="SaveToWheel">
+                                                            <Setter Property="Text" Value="&#xE74E;" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="ApplyProfile">
+                                                            <Setter Property="Text" Value="&#xEB51;" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="Calibration">
+                                                            <Setter Property="Text" Value="&#xE9D9;" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Kind}" Value="Revert">
+                                                            <Setter Property="Text" Value="&#xE72B;" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                                            <TextBlock Style="{StaticResource HelperText}" Text="{Binding Kind}" />
+                                            <TextBlock Style="{StaticResource HelperText}" Text="{Binding CreatedUtc, StringFormat={}{0:g}}" />
+                                            <TextBlock Style="{StaticResource HelperText}" Text="{Binding FirmwareVersion, StringFormat=FW: {0}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </StackPanel>
             </Border>
 
-            <Border Grid.Column="1" Grid.Row="0" Style="{StaticResource Card}" Margin="16,0,0,0">
-                <StackPanel>
-                    <TextBlock Text="Compare Snapshots" FontSize="16" FontWeight="SemiBold" />
-                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
-                        <ComboBox ItemsSource="{Binding SnapshotList}" SelectedItem="{Binding CompareLeft}" DisplayMemberPath="Label" Width="180" />
-                        <ComboBox ItemsSource="{Binding SnapshotList}" SelectedItem="{Binding CompareRight}" DisplayMemberPath="Label" Width="180" />
-                        <Button Content="Compare" Command="{Binding CompareSelectedCommand}" />
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="16,0,0,0">
+                <StackPanel helpers:PanelSpacing.Spacing="10">
+                    <TextBlock Text="Snapshot Details" FontSize="20" FontWeight="SemiBold" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0"
+                                  Style="{StaticResource FloatingComboBox}"
+                                  helpers:FloatingField.Label="Compare A"
+                                  ItemsSource="{Binding SnapshotList}"
+                                  SelectedItem="{Binding CompareLeft}"
+                                  DisplayMemberPath="Label"
+                                  Margin="0,0,8,0" />
+                        <ComboBox Grid.Column="1"
+                                  Style="{StaticResource FloatingComboBox}"
+                                  helpers:FloatingField.Label="Compare B"
+                                  ItemsSource="{Binding SnapshotList}"
+                                  SelectedItem="{Binding CompareRight}"
+                                  DisplayMemberPath="Label"
+                                  Margin="0,0,8,0" />
+                        <Button Grid.Column="2" Content="Compare" Command="{Binding CompareSelectedCommand}" />
+                    </Grid>
+
+                    <ListBox ItemsSource="{Binding DiffLines}" Height="250" />
+
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                        <Button Content="Revert Settings" Command="{Binding RevertSettingsCommand}" Style="{StaticResource PrimaryButton}" />
+                        <Button Content="Revert Firmware" Command="{Binding RevertFirmwareCommand}" />
+                        <Button Content="Revert Both" Command="{Binding RevertBothCommand}" Style="{StaticResource AccentButton}" />
                     </StackPanel>
-                    <ListBox ItemsSource="{Binding DiffLines}" Height="220" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
         </Grid>
     </ScrollViewer>
 </UserControl>
-
-

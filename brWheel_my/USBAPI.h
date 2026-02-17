@@ -5,9 +5,15 @@
 
 #if defined(USBCON)
 
+#include "USBDesc.h"
+#include "USBCore.h"
+
 //================================================================================
 //================================================================================
 //	Low level API
+
+// Forward declaration is enough for pointer use in Serial_.
+struct ring_buffer;
 
 typedef struct
 {

@@ -1,0 +1,130 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.SidebarStatusPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <Border Style="{StaticResource Card}" Margin="20,0,20,12">
+        <StackPanel helpers:PanelSpacing.Spacing="8">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                <TextBlock Text="Important Status" FontWeight="SemiBold" />
+                <Button Content="{Binding SidebarDetailsChevronGlyph}"
+                        Width="28"
+                        Height="28"
+                        FontFamily="Segoe Fluent Icons"
+                        Style="{StaticResource GhostButton}"
+                        Command="{Binding ToggleSidebarDetailsCommand}"
+                        ToolTip="Toggle details" />
+            </StackPanel>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons" Text="{Binding GlyphConnection}" Foreground="{StaticResource AccentBrush}" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" Text="Connection" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="6">
+                        <Border Style="{StaticResource StatusPill}">
+                            <TextBlock Style="{StaticResource HelperText}" Text="{Binding StatusText}" />
+                        </Border>
+                        <TextBlock Style="{StaticResource HelperText}" Text="{Binding DevicePort}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons" Text="{Binding GlyphFirmware}" Foreground="{StaticResource AccentBrush}" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" Text="Firmware" />
+                    <TextBlock Style="{StaticResource HelperText}" Text="{Binding DeviceFirmwareVersion}" />
+                    <Border Style="{StaticResource StatusPill}" HorizontalAlignment="Left">
+                        <TextBlock Style="{StaticResource HelperText}" Text="{Binding FirmwareUpdateStatus}" />
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons" Text="{Binding GlyphCalibration}" Foreground="{StaticResource AccentBrush}" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" Text="Calibration" />
+                    <TextBlock Style="{StaticResource HelperText}" Text="{Binding SidebarCalibrationStatus}" />
+                </StackPanel>
+            </Grid>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons" Text="{Binding GlyphSave}" Foreground="{StaticResource AccentBrush}" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" Text="Save State" />
+                    <TextBlock Style="{StaticResource HelperText}" Text="{Binding SidebarSaveState}" />
+                </StackPanel>
+            </Grid>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons" Text="{Binding GlyphHealth}" Foreground="{StaticResource AccentBrush}" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" Text="Health" />
+                    <TextBlock Style="{StaticResource HelperText}">
+                        <Run Text="Clip " />
+                        <Run Text="{Binding SidebarClippingPercent, Converter={StaticResource PercentOrNa}}" />
+                        <Run Text=" • Osc " />
+                        <Run Text="{Binding SidebarOscillationDetected, Converter={StaticResource BoolToStatusText}, ConverterParameter='Warn|OK'}" />
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource HelperText}">
+                        <Run Text="Noise " />
+                        <Run Text="{Binding SidebarEncoderNoise, Converter={StaticResource DoubleOrNa}, ConverterParameter=0.0}" />
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons" Text="{Binding GlyphPhone}" Foreground="{StaticResource AccentBrush}" />
+                <StackPanel Grid.Column="1" helpers:PanelSpacing.Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Phone Dashboard" />
+                    <TextBlock Style="{StaticResource HelperText}" Text="{Binding SidebarPhoneDashboardStatus}" />
+                    <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="6">
+                        <Button Content="{Binding GlyphQr}"
+                                FontFamily="Segoe Fluent Icons"
+                                Width="34"
+                                Command="{Binding NavigatePhoneDashboardCommand}"
+                                ToolTip="Open dashboard page" />
+                        <Button Content="Dashboard"
+                                Command="{Binding NavigatePhoneDashboardCommand}"
+                                Style="{StaticResource PrimaryButton}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Visibility="{Binding IsSidebarDetailsExpanded, Converter={StaticResource BoolToVisibility}}" helpers:PanelSpacing.Spacing="2">
+                <Separator Margin="0,6,0,4" />
+                <TextBlock Style="{StaticResource HelperText}">
+                    <Run Text="VID/PID: " />
+                    <Run Text="{Binding DeviceVidPid}" />
+                </TextBlock>
+                <TextBlock Style="{StaticResource HelperText}" TextWrapping="Wrap">
+                    <Run Text="Caps: " />
+                    <Run Text="{Binding DeviceCapabilitiesText}" />
+                </TextBlock>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

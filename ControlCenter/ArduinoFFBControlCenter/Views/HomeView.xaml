@@ -3,127 +3,347 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="16">
+        <StackPanel Margin="{StaticResource PagePadding}" helpers:PanelSpacing.Spacing="18">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="260" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" helpers:PanelSpacing.Spacing="10">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource SectionTitleText}" Text="Device Control Center" />
+                                <Border Style="{StaticResource StatusPill}"
+                                        Margin="10,0,0,0"
+                                        Background="{Binding DataContext.StatusBrush, RelativeSource={RelativeSource AncestorType=Window}}">
+                                    <TextBlock Foreground="White"
+                                               FontWeight="SemiBold"
+                                               Text="{Binding DataContext.StatusText, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                </Border>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding DataContext.DeviceSummary, RelativeSource={RelativeSource AncestorType=Window}}"
+                                       Style="{StaticResource HelperText}" />
+
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" helpers:PanelSpacing.Spacing="6">
+                                    <TextBlock>
+                                        <Run Text="Firmware: " />
+                                        <Run Text="{Binding FirmwareVersion}" />
+                                    </TextBlock>
+                                    <TextBlock>
+                                        <Run Text="Update: " />
+                                        <Run Text="{Binding DataContext.FirmwareUpdateStatus, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                    </TextBlock>
+                                    <TextBlock>
+                                        <Run Text="Calibration: " />
+                                        <Run Text="{Binding CalibrationStatus}" />
+                                    </TextBlock>
+                                    <TextBlock>
+                                        <Run Text="Save: " />
+                                        <Run Text="{Binding SaveStatus}" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" helpers:PanelSpacing.Spacing="6">
+                                    <TextBlock>
+                                        <Run Text="Port: " />
+                                        <Run Text="{Binding Port}" />
+                                    </TextBlock>
+                                    <TextBlock>
+                                        <Run Text="VID/PID: " />
+                                        <Run Text="{Binding VidPid}" />
+                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource HelperText}" TextWrapping="Wrap" Text="{Binding CalibrationReason}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                                <Button Content="{Binding DataContext.ConnectButtonText, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Command="{Binding DataContext.ToggleConnectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Style="{StaticResource AccentButton}" />
+                                <Button Content="Scan Ports"
+                                        Command="{Binding DataContext.ScanPortsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        Style="{StaticResource PrimaryButton}" />
+                                <Button Content="Setup Wizard"
+                                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="wizard"
+                                        Style="{StaticResource PrimaryButton}" />
+                                <Button Content="Open Tuning"
+                                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="ffb"
+                                        Style="{StaticResource PrimaryButton}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Border Grid.Column="1"
+                                Margin="18,0,0,0"
+                                Style="{StaticResource CardSoft}">
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        helpers:PanelSpacing.Spacing="10">
+                                <TextBlock FontFamily="Segoe Fluent Icons"
+                                           FontSize="62"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Text="&#xE804;" />
+                                <TextBlock FontSize="15"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           Text="Wheel + Pedals Ready" />
+                                <TextBlock Style="{StaticResource HelperText}"
+                                           Text="Live status and control like a commercial pit app."
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Width="210" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="16,0,0,0">
+                    <StackPanel helpers:PanelSpacing.Spacing="10">
+                        <TextBlock Style="{StaticResource SectionTitleText}" Text="Quick Actions" />
+
+                        <Button Content="Firmware Update"
+                                Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="firmware"
+                                Style="{StaticResource AccentButton}" />
+                        <Button Content="Profiles Gallery"
+                                Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="profiles"
+                                Style="{StaticResource PrimaryButton}" />
+                        <Button Content="Start Game Presets"
+                                Command="{Binding StartGamePresetsCommand}"
+                                Style="{StaticResource AccentButton}" />
+                        <Button Content="Timeline + Revert"
+                                Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="snapshots"
+                                Style="{StaticResource PrimaryButton}" />
+                        <TextBlock Text="{Binding GamePresetStatus}"
+                                   Style="{StaticResource HelperText}"
+                                   TextWrapping="Wrap" />
+
+                        <Separator Margin="0,4,0,4" />
+
+                        <TextBlock Text="One-click Game Baselines" Style="{StaticResource HelperText}" />
+                        <UniformGrid Columns="2" Margin="0,2,0,0">
+                            <Border Style="{StaticResource CardSoft}" Margin="0,0,6,6" Padding="8">
+                                <TextBlock Text="Assetto Corsa" FontWeight="SemiBold" FontSize="12" />
+                            </Border>
+                            <Border Style="{StaticResource CardSoft}" Margin="6,0,0,6" Padding="8">
+                                <TextBlock Text="ACC" FontWeight="SemiBold" FontSize="12" />
+                            </Border>
+                            <Border Style="{StaticResource CardSoft}" Margin="0,0,6,0" Padding="8">
+                                <TextBlock Text="iRacing" FontWeight="SemiBold" FontSize="12" />
+                            </Border>
+                            <Border Style="{StaticResource CardSoft}" Margin="6,0,0,0" Padding="8">
+                                <TextBlock Text="BeamNG.drive" FontWeight="SemiBold" FontSize="12" />
+                            </Border>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
             <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="Connected Device" FontSize="16" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding DataContext.DeviceSummary, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{StaticResource MutedText}" Margin="0,6,0,8" />
+                <StackPanel helpers:PanelSpacing.Spacing="14">
+                    <TextBlock Style="{StaticResource SectionTitleText}" Text="Health Console" />
+
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" helpers:PanelSpacing.Spacing="4">
-                            <TextBlock Text="{Binding ProductName}" />
-                            <TextBlock Foreground="{StaticResource MutedText}">
-                                <Run Text="Firmware: " />
-                                <Run Text="{Binding FirmwareVersion}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}">
-                                <Run Text="INFO: " />
-                                <Run Text="{Binding InfoSupportText}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}">
-                                <Run Text="Update: " />
-                                <Run Text="{Binding DataContext.FirmwareUpdateStatus, RelativeSource={RelativeSource AncestorType=Window}}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}">
-                                <Run Text="Last Flash: " />
-                                <Run Text="{Binding DataContext.LastFlashStatus, RelativeSource={RelativeSource AncestorType=Window}}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}">
-                                <Run Text="Calibration: " />
-                                <Run Text="{Binding CalibrationStatus}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}" TextWrapping="Wrap">
-                                <Run Text="{Binding CalibrationReason}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}">
-                                <Run Text="Save: " />
-                                <Run Text="{Binding SaveStatus}" />
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" helpers:PanelSpacing.Spacing="4">
-                            <TextBlock>
-                                <Run Text="Port: " />
-                                <Run Text="{Binding Port}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}">
-                                <Run Text="VID/PID: " />
-                                <Run Text="{Binding VidPid}" />
-                            </TextBlock>
-                            <TextBlock Foreground="{StaticResource MutedText}" TextWrapping="Wrap">
-                                <Run Text="Caps: " />
-                                <Run Text="{Binding CapabilitiesText}" />
-                            </TextBlock>
-                        </StackPanel>
+
+                        <Border Grid.Column="0" Style="{StaticResource CardSoft}" Margin="0,0,8,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="6">
+                                <TextBlock Text="Clipping" Style="{StaticResource HelperText}" />
+                                <ProgressBar Value="{Binding ClippingPercent}" Maximum="100" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding ClippingPercent, Converter={StaticResource PercentOrNa}}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource CardSoft}" Margin="8,0,8,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="6">
+                                <TextBlock Text="Oscillation Risk" Style="{StaticResource HelperText}" />
+                                <ProgressBar Value="{Binding OscillationRiskPercent}" Maximum="100" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding OscillationDetected, Converter={StaticResource BoolToStatusText}, ConverterParameter='Warn|OK'}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource CardSoft}" Margin="8,0,8,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="6">
+                                <TextBlock Text="Encoder Noise" Style="{StaticResource HelperText}" />
+                                <ProgressBar Value="{Binding EncoderNoise}" Maximum="100" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding EncoderNoise, Converter={StaticResource DoubleOrNa}, ConverterParameter=0.0}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="3" Style="{StaticResource CardSoft}" Margin="8,0,0,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="6">
+                                <TextBlock Text="Telemetry Stability" Style="{StaticResource HelperText}" />
+                                <ProgressBar Value="{Binding TelemetryStability}" Maximum="100" />
+                                <TextBlock FontWeight="SemiBold">
+                                    <Run Text="{Binding TelemetryRate, Converter={StaticResource DoubleOrNa}, ConverterParameter=0}" />
+                                    <Run Text=" Hz" />
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource HelperText}">
+                                    <Run Text="Loss " />
+                                    <Run Text="{Binding PacketLossPercent, Converter={StaticResource PercentOrNa}}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Style="{StaticResource CardSoft}" Margin="0,0,8,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="4">
+                                <TextBlock Text="Wheel Angle" Style="{StaticResource HelperText}" />
+                                <TextBlock Style="{StaticResource MetricValueText}"
+                                           Text="{Binding WheelAngle, Converter={StaticResource DoubleOrNa}, ConverterParameter=0}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource CardSoft}" Margin="8,0,8,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="4">
+                                <TextBlock Text="Torque Command" Style="{StaticResource HelperText}" />
+                                <TextBlock Style="{StaticResource MetricValueText}"
+                                           Text="{Binding TorqueCommand, Converter={StaticResource DoubleOrNa}, ConverterParameter=0}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource CardSoft}" Margin="8,0,8,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="4">
+                                <TextBlock Text="Connection Quality" Style="{StaticResource HelperText}" />
+                                <TextBlock Style="{StaticResource MetricValueText}"
+                                           Text="{Binding ConnectionQuality, Converter={StaticResource DoubleOrNa}, ConverterParameter=0}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="3" Style="{StaticResource CardSoft}" Margin="8,0,0,0">
+                            <StackPanel helpers:PanelSpacing.Spacing="4">
+                                <TextBlock Text="Clipping State" Style="{StaticResource HelperText}" />
+                                <Border Style="{StaticResource StatusPill}">
+                                    <TextBlock Text="{Binding ClippingPercent, Converter={StaticResource PercentOrNa}}" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </StackPanel>
             </Border>
 
-            <UniformGrid Columns="4" Rows="1" Margin="0,0,0,8">
-                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
-                    <StackPanel>
-                        <TextBlock Text="Wheel Angle" Foreground="{StaticResource MutedText}" />
-                        <TextBlock Text="{Binding WheelAngle, StringFormat={}{0:0}}" FontSize="28" FontWeight="Bold" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
-                    <StackPanel>
-                        <TextBlock Text="Torque Command" Foreground="{StaticResource MutedText}" />
-                        <TextBlock Text="{Binding TorqueCommand, StringFormat={}{0:0}}" FontSize="28" FontWeight="Bold" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
-                    <StackPanel>
-                        <TextBlock Text="Clipping" Foreground="{StaticResource MutedText}" />
-                        <TextBlock Text="{Binding Clipping}" FontSize="28" FontWeight="Bold" />
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource Card}">
-                    <StackPanel>
-                        <TextBlock Text="Telemetry Hz" Foreground="{StaticResource MutedText}" />
-                        <TextBlock Text="{Binding TelemetryRate, StringFormat={}{0:0}}" FontSize="28" FontWeight="Bold" />
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="1.1*" />
+                </Grid.ColumnDefinitions>
 
-            <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="12">
-                <TextBlock Text="{Binding OscillationDetected, StringFormat=Oscillation: {0}}" Foreground="{StaticResource MutedText}" />
-            </StackPanel>
+                <Border Grid.Column="0" Style="{StaticResource Card}">
+                    <StackPanel helpers:PanelSpacing.Spacing="10">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource SectionTitleText}" Text="Timeline Preview" />
+                            <Button Content="Open Timeline"
+                                    Margin="10,0,0,0"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="snapshots" />
+                        </StackPanel>
 
-            <UniformGrid Columns="3" Rows="4">
-                <Button Content="Setup Wizard" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="wizard" />
-                <Button Content="Calibration" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="calibration" />
-                <Button Content="FFB Settings" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="ffb" />
-                <Button Content="Steering" Style="{StaticResource PrimaryButton}" Margin="0,0,0,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="steering" />
-                <Button Content="Pedals" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="pedals" />
-                <Button Content="Buttons" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="buttons" />
-                <Button Content="Profiles" Style="{StaticResource PrimaryButton}" Margin="0,0,12,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="profiles" />
-                <Button Content="Firmware" Style="{StaticResource PrimaryButton}" Margin="0,0,0,12"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="firmware" />
-                <Button Content="Telemetry" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="telemetry" />
-                <Button Content="Snapshots" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="snapshots" />
-                <Button Content="Self-Test" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="selftest" />
-                <Button Content="Phone Dashboard" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="phone" />
-                <Button Content="Lab Tools" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="lab" />
-                <Button Content="Diagnostics" Style="{StaticResource PrimaryButton}"
-                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="diagnostics" />
-            </UniformGrid>
+                        <ItemsControl ItemsSource="{Binding RecentSnapshots}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource CardSoft}" Padding="10" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0"
+                                                       FontFamily="Segoe Fluent Icons"
+                                                       Foreground="{StaticResource AccentBrush}"
+                                                       VerticalAlignment="Top"
+                                                       Text="{Binding IconGlyph}" />
+
+                                            <StackPanel Grid.Column="1" helpers:PanelSpacing.Spacing="2">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Timestamp}" Style="{StaticResource HelperText}" />
+                                                <TextBlock Text="{Binding DiffSummary}" Style="{StaticResource HelperText}" TextWrapping="Wrap" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" helpers:PanelSpacing.Spacing="6">
+                                                <Button Content="Revert"
+                                                        Style="{StaticResource GhostButton}"
+                                                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="snapshots" />
+                                                <Button Content="Details"
+                                                        Style="{StaticResource GhostButton}"
+                                                        Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="snapshots" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="16,0,0,0">
+                    <StackPanel helpers:PanelSpacing.Spacing="10">
+                        <TextBlock Style="{StaticResource SectionTitleText}" Text="Phone Dashboard" />
+                        <Border Style="{StaticResource StatusPill}" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding PhoneDashboardStatus}" />
+                        </Border>
+                        <TextBox Style="{StaticResource FloatingTextBox}"
+                                 helpers:FloatingField.Label="URL"
+                                 Text="{Binding PhoneDashboardUrl}"
+                                 IsReadOnly="True" />
+
+                        <Border Height="220"
+                                CornerRadius="12"
+                                BorderBrush="{StaticResource CardBorder}"
+                                BorderThickness="1"
+                                Background="{StaticResource Surface2Brush}">
+                            <Image Source="{Binding PhoneDashboardQr}" Stretch="Uniform" Margin="12" />
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                            <Button Content="Start / Stop"
+                                    Command="{Binding ToggleDashboardCommand}"
+                                    Style="{StaticResource AccentButton}" />
+                            <Button Content="Open Page"
+                                    Command="{Binding DataContext.NavigateToCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="phone"
+                                    Style="{StaticResource PrimaryButton}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
-
-

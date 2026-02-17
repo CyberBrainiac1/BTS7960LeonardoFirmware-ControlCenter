@@ -1,12 +1,16 @@
 <Window x:Class="ArduinoFFBControlCenter.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers"
+        xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers"
+        xmlns:views="clr-namespace:ArduinoFFBControlCenter.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:ArduinoFFBControlCenter.ViewModels"
         mc:Ignorable="d"
-        Title="Arduino FFB Control Center" Height="820" Width="1280" Icon="pack://application:,,,/Assets/AppIcon.png"
+        Title="Arduino FFB Control Center"
+        Height="900"
+        Width="1460"
+        Icon="pack://application:,,,/Assets/AppIcon.png"
         Background="{StaticResource AppBackground}"
         WindowStartupLocation="CenterScreen">
 
@@ -16,60 +20,137 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="240" />
+            <ColumnDefinition Width="300" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="{StaticResource SideNavBackground}" BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,1,0">
-            <DockPanel>
-                <StackPanel Margin="20,24">
-                    <TextBlock Text="Wheel Control Center" FontSize="18" FontWeight="Bold" Foreground="White" />
-                    <TextBlock Text="Arduino FFB" FontSize="12" Foreground="{StaticResource MutedText}" Margin="0,4,0,16" />
+        <Border Grid.Column="0"
+                Margin="14"
+                Background="{StaticResource SideNavBackground}"
+                BorderBrush="{StaticResource CardBorder}"
+                BorderThickness="1"
+                CornerRadius="16">
+            <DockPanel LastChildFill="True">
+
+                <StackPanel DockPanel.Dock="Top" Margin="18,18,18,14">
+                    <TextBlock Text="Wheel Control Center"
+                               FontSize="22"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="Arduino FFB / BTS7960"
+                               Style="{StaticResource HelperText}"
+                               Margin="0,4,0,0" />
                 </StackPanel>
 
-                <ListBox ItemsSource="{Binding NavigationItems}" SelectedItem="{Binding SelectedNavItem}" BorderThickness="0" Background="Transparent" Margin="12,0" HorizontalContentAlignment="Stretch">
+                <views:SidebarStatusPanel DockPanel.Dock="Top" />
+
+                <ListBox ItemsSource="{Binding NavigationItems}"
+                         SelectedItem="{Binding SelectedNavItem}"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         Margin="12,2,12,12">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Button Content="{Binding Title}" Command="{Binding SelectCommand}" Style="{StaticResource NavButton}" />
+                            <Button Command="{Binding SelectCommand}" Style="{StaticResource NavButton}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               FontFamily="Segoe Fluent Icons"
+                                               FontSize="14"
+                                               Foreground="{StaticResource MutedText}"
+                                               Text="{Binding IconGlyph}" />
+                                    <TextBlock Grid.Column="1"
+                                               Margin="10,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding Title}" />
+                                </Grid>
+                            </Button>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
-
-                <StackPanel Margin="16,12" VerticalAlignment="Bottom">
-                    <TextBlock Text="Device" FontWeight="SemiBold" Foreground="White" />
-                    <TextBlock Text="{Binding DeviceSummary}" FontSize="11" Foreground="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,6,0,0" />
-                </StackPanel>
             </DockPanel>
         </Border>
 
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="64" />
+                <RowDefinition Height="86" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Background="{StaticResource TopBarBackground}" BorderBrush="{StaticResource CardBorder}" BorderThickness="0,0,0,1">
-                <DockPanel Margin="20,8" LastChildFill="True">
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center" helpers:PanelSpacing.Spacing="8">
-                        <TextBlock Text="Status" Foreground="{StaticResource MutedText}" />
-                        <Border Background="{Binding StatusBrush}" CornerRadius="8" Padding="8,2">
-                            <TextBlock Text="{Binding StatusText}" Foreground="White" FontWeight="SemiBold" />
-                        </Border>
+            <Border Grid.Row="0"
+                    Margin="0,14,14,0"
+                    Background="{StaticResource TopBarBackground}"
+                    BorderBrush="{StaticResource CardBorder}"
+                    BorderThickness="1"
+                    CornerRadius="16">
+                <Grid Margin="18,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                helpers:PanelSpacing.Spacing="10">
+                        <Button Content="&#xE72B;"
+                                FontFamily="Segoe Fluent Icons"
+                                Width="40"
+                                Command="{Binding GoBackCommand}"
+                                Style="{StaticResource GhostButton}"
+                                IsEnabled="{Binding CanGoBack}" />
+
+                        <StackPanel>
+                            <TextBlock Text="{Binding SelectedNavItem.Title, FallbackValue=Home Dashboard}"
+                                       FontSize="21"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="Connect, tune, profile, and monitor your wheel in one place."
+                                       Style="{StaticResource HelperText}" />
+                        </StackPanel>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center" helpers:PanelSpacing.Spacing="8">
-                        <CheckBox Content="Advanced Mode" IsChecked="{Binding IsBeginnerMode, Converter={StaticResource InverseBool}}" Foreground="{StaticResource MutedText}" />
-                        <CheckBox Content="Demo Mode" IsChecked="{Binding IsDemoMode}" Foreground="{StaticResource MutedText}" />
-                        <ComboBox Width="160" ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}" />
-                        <Button Content="Scan" Command="{Binding ScanPortsCommand}" Style="{StaticResource PrimaryButton}" />
-                        <Button Content="{Binding ConnectButtonText}" Command="{Binding ToggleConnectCommand}" Style="{StaticResource AccentButton}" />
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                helpers:PanelSpacing.Spacing="8">
+
+                        <Border Style="{StaticResource StatusPill}">
+                            <TextBlock FontWeight="SemiBold" Text="{Binding StatusText}" />
+                        </Border>
+
+                        <ComboBox Width="150"
+                                  Style="{StaticResource FloatingComboBox}"
+                                  helpers:FloatingField.Label="COM"
+                                  ItemsSource="{Binding AvailablePorts}"
+                                  SelectedItem="{Binding SelectedPort}" />
+
+                        <Button Content="Scan"
+                                Command="{Binding ScanPortsCommand}"
+                                Style="{StaticResource PrimaryButton}" />
+
+                        <Button Content="{Binding ConnectButtonText}"
+                                Command="{Binding ToggleConnectCommand}"
+                                Style="{StaticResource AccentButton}" />
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" helpers:PanelSpacing.Spacing="6" Margin="8,0,0,0">
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource HelperText}" Text="Advanced" />
+                            <ToggleButton Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding IsBeginnerMode, Converter={StaticResource InverseBool}}" />
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource HelperText}" Text="Demo" />
+                            <ToggleButton Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding IsDemoMode}" />
+                        </StackPanel>
                     </StackPanel>
-                </DockPanel>
+                </Grid>
             </Border>
 
-            <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" />
+            <Border Grid.Row="1"
+                    Margin="0,14,14,14"
+                    Background="Transparent">
+                <ContentControl Content="{Binding CurrentViewModel}" />
+            </Border>
         </Grid>
+
     </Grid>
 </Window>
-
-

@@ -1,0 +1,89 @@
+<UserControl x:Class="ArduinoFFBControlCenter.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" helpers:PanelSpacing.Spacing="16">
+            <Border Style="{StaticResource Card}">
+                <StackPanel helpers:PanelSpacing.Spacing="8">
+                    <TextBlock Text="Firmware Send Mode" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="Choose how firmware is sent when flashing." Foreground="{StaticResource MutedText}" />
+
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Send as .ino (compile for your pinout)" VerticalAlignment="Center" />
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding SendAsInoMode}" />
+                    </DockPanel>
+                    <TextBlock Foreground="{StaticResource MutedText}" TextWrapping="Wrap">
+                        <Run Text="Off: uses selected HEX/firmware. " />
+                        <Run Text="On: builds from " />
+                        <Run Text="brWheel_my.ino" />
+                        <Run Text=" using your wiring pinout and flashes that build." />
+                    </TextBlock>
+
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Force pinout custom build (even default pinout)" VerticalAlignment="Center" />
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding ForcePinoutBuild}" />
+                    </DockPanel>
+
+                    <TextBlock Foreground="{StaticResource MutedText}" TextWrapping="Wrap">
+                        <Run Text="Requires Arduino CLI when .ino mode is enabled. Docs: " />
+                        <Hyperlink NavigateUri="https://arduino.github.io/arduino-cli/latest/installation/"
+                                   RequestNavigate="OnLinkNavigate">Install guide</Hyperlink>
+                        <Run Text=" | Releases: " />
+                        <Hyperlink NavigateUri="https://github.com/arduino/arduino-cli/releases"
+                                   RequestNavigate="OnLinkNavigate">GitHub releases</Hyperlink>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource MutedText}" TextWrapping="Wrap">
+                        <Run Text="The app auto-downloads Arduino CLI to %AppData%/ArduinoFFBControlCenter/tools/arduino-cli when missing." />
+                    </TextBlock>
+                    <TextBox IsReadOnly="True"
+                             Text="Quick install (PowerShell): winget install arduino.arduino-cli"
+                             ToolTip="Run this in PowerShell to install Arduino CLI"
+                             Height="34" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel helpers:PanelSpacing.Spacing="10">
+                    <TextBlock Text="Theme" FontSize="18" FontWeight="SemiBold" />
+                    <ComboBox Width="240"
+                              Style="{StaticResource FloatingComboBox}"
+                              helpers:FloatingField.Label="Theme mode"
+                              ItemsSource="{Binding ThemeModes}"
+                              SelectedItem="{Binding ThemeMode}" />
+                    <TextBlock Text="SoftDark is default. Light gives a bright Material-like look." Foreground="{StaticResource MutedText}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel helpers:PanelSpacing.Spacing="8">
+                    <TextBlock Text="App Behavior" FontSize="18" FontWeight="SemiBold" />
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Auto connect on startup" VerticalAlignment="Center" />
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding AutoConnect}" />
+                    </DockPanel>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Auto-apply last profile on connect" VerticalAlignment="Center" />
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding AutoApplyLastProfile}" />
+                    </DockPanel>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Beginner mode default" VerticalAlignment="Center" />
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding BeginnerMode}" />
+                    </DockPanel>
+                    <DockPanel LastChildFill="False">
+                        <TextBlock Text="Demo mode" VerticalAlignment="Center" />
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}" IsChecked="{Binding DemoMode}" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                    <Button Content="Save Settings" Command="{Binding SaveCommand}" Style="{StaticResource AccentButton}" />
+                    <Button Content="Reset Build Settings" Command="{Binding ResetBuildSettingsCommand}" Style="{StaticResource PrimaryButton}" />
+                    <TextBlock Text="{Binding SaveStatus}" Foreground="{StaticResource MutedText}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

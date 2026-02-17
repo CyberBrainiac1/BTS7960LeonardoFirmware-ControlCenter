@@ -1,6 +1,9 @@
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,6 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 using ArduinoFFBControlCenter.Helpers;
 using ArduinoFFBControlCenter.Models;
 using ArduinoFFBControlCenter.Services;
+using ArduinoFFBControlCenter.Views;
 
 namespace ArduinoFFBControlCenter.ViewModels;
 
@@ -17,6 +21,10 @@ namespace ArduinoFFBControlCenter.ViewModels;
 /// </summary>
 public partial class MainViewModel : ViewModelBase
 {
+    private bool _firstRunPromptShown;
+    private readonly Stack<NavItem> _backStack = new();
+    private NavItem? _lastNavItem;
+    private bool _isNavigatingBack;
     private readonly LoggerService _logger;
     private readonly SettingsService _settingsService;
     private readonly AppSettings _settings;
@@ -48,6 +56,7 @@ public partial class MainViewModel : ViewModelBase
     private readonly SelfTestService _selfTest;
     private readonly ScreenCaptureService _screenCapture;
     private readonly OllamaService _ollama;
+    private readonly ThemeService _themeService;
 
     public ObservableCollection<NavItem> NavigationItems { get; } = new();
     public ObservableCollection<string> AvailablePorts { get; } = new();
@@ -106,6 +115,52 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private bool isDemoMode;
 
+    [ObservableProperty]
+    private bool isAiSidebarEnabled = true;
+
+    [ObservableProperty]
+    private string aiSidebarPrompt = string.Empty;
+
+    [ObservableProperty]
+    private string aiSidebarStatus = "AI ready.";
+
+    [ObservableProperty]
+    private bool aiSidebarBusy;
+
+    [ObservableProperty]
+    private bool isSidebarDetailsExpanded;
+
+    [ObservableProperty]
+    private string sidebarCalibrationStatus = "—";
+
+    [ObservableProperty]
+    private string sidebarSaveState = "—";
+
+    [ObservableProperty]
+    private double sidebarClippingPercent = double.NaN;
+
+    [ObservableProperty]
+    private bool? sidebarOscillationDetected;
+
+    [ObservableProperty]
+    private double sidebarEncoderNoise = double.NaN;
+
+    [ObservableProperty]
+    private string sidebarPhoneDashboardStatus = "Stopped";
+
+    public ObservableCollection<OllamaChatEntry> AiSidebarMessages { get; } = new();
+
+    public string GlyphConnection => GlyphHelper.Get("connection");
+    public string GlyphFirmware => GlyphHelper.Get("firmware");
+    public string GlyphCalibration => GlyphHelper.Get("calibration");
+    public string GlyphSave => GlyphHelper.Get("save");
+    public string GlyphHealth => GlyphHelper.Get("health");
+    public string GlyphPhone => GlyphHelper.Get("phone");
+    public string GlyphQr => GlyphHelper.Get("qr");
+    public string SidebarDetailsChevronGlyph => IsSidebarDetailsExpanded ? GlyphHelper.Get("chevronUp") : GlyphHelper.Get("chevronDown");
+
+    public bool CanGoBack => _backStack.Count > 0;
+
     public MainViewModel()
     {
         // Service bootstrap kept explicit for readability.
@@ -113,6 +168,8 @@ public partial class MainViewModel : ViewModelBase
         _logger = new LoggerService();
         _settingsService = new SettingsService();
         _settings = _settingsService.Load();
+        _themeService = new ThemeService();
+        _themeService.ApplyTheme(_settings.ThemeMode);
         _settingsService.Saved += OnSettingsSaved;
         _serial = new SerialDeviceService(_logger);
         _protocol = new DeviceProtocolService(_serial, _logger);
@@ -148,6 +205,15 @@ public partial class MainViewModel : ViewModelBase
         ScanPorts();
 
         _serial.Disconnected += OnSerialDisconnected;
+        _telemetry.SamplesUpdated += OnSidebarSamplesUpdated;
+        _telemetry.StatsUpdated += OnSidebarStatsUpdated;
+        _calibration.StatusChanged += OnSidebarCalibrationChanged;
+        _deviceSettings.PersistenceChanged += OnSidebarPersistenceChanged;
+        _dashboardHost.StateChanged += OnSidebarDashboardChanged;
+
+        OnSidebarCalibrationChanged(_calibration.CurrentAssessment);
+        OnSidebarPersistenceChanged(_deviceSettings.PersistenceState);
+        OnSidebarDashboardChanged(_dashboardHost.State);
 
         if (!string.IsNullOrWhiteSpace(_settings.LastPort))
         {
@@ -171,6 +237,7 @@ public partial class MainViewModel : ViewModelBase
         {
             EnterDemoMode();
         }
+        IsAiSidebarEnabled = _settings.AiChatEnabled;
 
         // Restore last tuning state so UI opens with previous values.
         if (_settings.LastTuningConfig != null)
@@ -208,6 +275,14 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnSelectedNavItemChanged(NavItem? value)
     {
+        if (_lastNavItem != null && value != null && !ReferenceEquals(_lastNavItem, value) && !_isNavigatingBack)
+        {
+            _backStack.Push(_lastNavItem);
+        }
+
+        _lastNavItem = value;
+        OnPropertyChanged(nameof(CanGoBack));
+
         if (value?.TargetViewModel != null)
         {
             CurrentViewModel = value.TargetViewModel;
@@ -219,10 +294,10 @@ public partial class MainViewModel : ViewModelBase
     private void BuildNavigation()
     {
         // One viewmodel per module keeps each area isolated and testable.
-        var home = new HomeViewModel(_logger, _hid, _telemetry, _deviceState, _calibration, _deviceSettings);
+        var home = new HomeViewModel(_logger, _hid, _telemetry, _deviceState, _calibration, _deviceSettings, _dashboardHost, _snapshots);
         var wizard = new SetupWizardViewModel(_logger, _deviceManager, _flasher, _firmwareLibrary, _profiles, _deviceState, _tuningState, _calibration, _deviceSettings, _wizardState, _customBuilder, _settingsService, _settings, _snapshots);
         var calibration = new CalibrationViewModel(_logger, _calibration, _deviceSettings, _deviceState, _capabilities, _tuningState, _snapshots);
-        var firmware = new FirmwareViewModel(_logger, _flasher, _firmwareLibrary, _settingsService, _settings, _deviceManager, _protocol, _snapshots);
+        var firmware = new FirmwareViewModel(_logger, _flasher, _firmwareLibrary, _settingsService, _settings, _deviceManager, _protocol, _snapshots, _customBuilder, _wizardState);
         var ffb = new FfbTuningViewModel(_logger, _deviceSettings, _deviceState, _uiMode, _tuningState, _capabilities, _snapshots);
         var steering = new SteeringViewModel(_logger, _deviceSettings, _deviceState, _tuningState);
         var buttons = new ButtonsViewModel(_logger, _hid, _deviceState);
@@ -232,26 +307,26 @@ public partial class MainViewModel : ViewModelBase
         var snapshots = new SnapshotsViewModel(_logger, _snapshots, _flasher, _deviceSettings, _deviceState, _tuningState, _telemetry);
         var selfTest = new SelfTestViewModel(_logger, _selfTest, _snapshots, _telemetry, _deviceState);
         var phoneDashboard = new PhoneDashboardViewModel(_logger, _dashboardHost, _settingsService, _settings);
-        var ollama = new OllamaViewModel(_logger, _ollama, _screenCapture, _settingsService, _settings);
         var lab = new LabToolsViewModel(_logger, _hid, _deviceState, _calibration, _settingsService, _settings);
         var diagnostics = new DiagnosticsViewModel(_logger, _diagnostics, _settingsService, _settings, _deviceState, _telemetry, _tuningState, _wizardState);
+        var settingsVm = new SettingsViewModel(_settingsService, _settings, _themeService);
 
-        NavigationItems.Add(new NavItem { Key = "home", Title = "Home Dashboard", TargetViewModel = home, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[0]) });
-        NavigationItems.Add(new NavItem { Key = "wizard", Title = "Setup Wizard", TargetViewModel = wizard, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[1]) });
-        NavigationItems.Add(new NavItem { Key = "calibration", Title = "Calibration", TargetViewModel = calibration, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[2]) });
-        NavigationItems.Add(new NavItem { Key = "firmware", Title = "Firmware", TargetViewModel = firmware, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[3]) });
-        NavigationItems.Add(new NavItem { Key = "ffb", Title = "FFB Settings", TargetViewModel = ffb, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[4]) });
-        NavigationItems.Add(new NavItem { Key = "steering", Title = "Steering", TargetViewModel = steering, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[5]) });
-        NavigationItems.Add(new NavItem { Key = "pedals", Title = "Pedals", TargetViewModel = pedals, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[6]) });
-        NavigationItems.Add(new NavItem { Key = "buttons", Title = "Buttons", TargetViewModel = buttons, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[7]) });
-        NavigationItems.Add(new NavItem { Key = "profiles", Title = "Profiles", TargetViewModel = profiles, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[8]) });
-        NavigationItems.Add(new NavItem { Key = "telemetry", Title = "Telemetry", TargetViewModel = telemetry, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[9]) });
-        NavigationItems.Add(new NavItem { Key = "snapshots", Title = "Snapshots", TargetViewModel = snapshots, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[10]) });
-        NavigationItems.Add(new NavItem { Key = "selftest", Title = "Self-Test", TargetViewModel = selfTest, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[11]) });
-        NavigationItems.Add(new NavItem { Key = "phone", Title = "Phone Dashboard", TargetViewModel = phoneDashboard, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[12]) });
-        NavigationItems.Add(new NavItem { Key = "ollama", Title = "AI Side View", TargetViewModel = ollama, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[13]) });
-        NavigationItems.Add(new NavItem { Key = "lab", Title = "Lab Tools", TargetViewModel = lab, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[14]) });
-        NavigationItems.Add(new NavItem { Key = "diagnostics", Title = "Diagnostics", TargetViewModel = diagnostics, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[15]) });
+        NavigationItems.Add(new NavItem { Key = "home", IconGlyph = GlyphHelper.Get("home"), Title = "Home Dashboard", TargetViewModel = home, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[0]) });
+        NavigationItems.Add(new NavItem { Key = "wizard", IconGlyph = GlyphHelper.Get("setup"), Title = "Setup Wizard", TargetViewModel = wizard, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[1]) });
+        NavigationItems.Add(new NavItem { Key = "calibration", IconGlyph = GlyphHelper.Get("calibration"), Title = "Calibration", TargetViewModel = calibration, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[2]) });
+        NavigationItems.Add(new NavItem { Key = "firmware", IconGlyph = GlyphHelper.Get("firmware"), Title = "Firmware", TargetViewModel = firmware, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[3]) });
+        NavigationItems.Add(new NavItem { Key = "ffb", IconGlyph = GlyphHelper.Get("ffb"), Title = "FFB Settings", TargetViewModel = ffb, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[4]) });
+        NavigationItems.Add(new NavItem { Key = "steering", IconGlyph = GlyphHelper.Get("steering"), Title = "Steering", TargetViewModel = steering, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[5]) });
+        NavigationItems.Add(new NavItem { Key = "pedals", IconGlyph = GlyphHelper.Get("pedals"), Title = "Pedals", TargetViewModel = pedals, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[6]) });
+        NavigationItems.Add(new NavItem { Key = "buttons", IconGlyph = GlyphHelper.Get("buttons"), Title = "Buttons", TargetViewModel = buttons, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[7]) });
+        NavigationItems.Add(new NavItem { Key = "profiles", IconGlyph = GlyphHelper.Get("profiles"), Title = "Profiles", TargetViewModel = profiles, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[8]) });
+        NavigationItems.Add(new NavItem { Key = "telemetry", IconGlyph = GlyphHelper.Get("telemetry"), Title = "Telemetry", TargetViewModel = telemetry, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[9]) });
+        NavigationItems.Add(new NavItem { Key = "snapshots", IconGlyph = GlyphHelper.Get("timeline"), Title = "Snapshots", TargetViewModel = snapshots, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[10]) });
+        NavigationItems.Add(new NavItem { Key = "selftest", IconGlyph = GlyphHelper.Get("selftest"), Title = "Self-Test", TargetViewModel = selfTest, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[11]) });
+        NavigationItems.Add(new NavItem { Key = "phone", IconGlyph = GlyphHelper.Get("phone"), Title = "Phone Dashboard", TargetViewModel = phoneDashboard, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[12]) });
+        NavigationItems.Add(new NavItem { Key = "lab", IconGlyph = GlyphHelper.Get("tools"), Title = "Lab Tools", TargetViewModel = lab, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[13]) });
+        NavigationItems.Add(new NavItem { Key = "diagnostics", IconGlyph = GlyphHelper.Get("diagnostics"), Title = "Diagnostics", TargetViewModel = diagnostics, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[14]) });
+        NavigationItems.Add(new NavItem { Key = "settings", IconGlyph = GlyphHelper.Get("settings"), Title = "Settings", TargetViewModel = settingsVm, SelectCommand = new RelayCommand(() => SelectedNavItem = NavigationItems[15]) });
 
         SelectedNavItem = NavigationItems[0];
 
@@ -263,6 +338,18 @@ public partial class MainViewModel : ViewModelBase
                 SelectedNavItem = match;
             }
         }
+    }
+
+    [RelayCommand]
+    private void ToggleSidebarDetails()
+    {
+        IsSidebarDetailsExpanded = !IsSidebarDetailsExpanded;
+    }
+
+    [RelayCommand]
+    private void NavigatePhoneDashboard()
+    {
+        NavigateTo("phone");
     }
 
     [RelayCommand]
@@ -401,6 +488,126 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private void GoBack()
+    {
+        if (_backStack.Count == 0)
+        {
+            return;
+        }
+
+        _isNavigatingBack = true;
+        try
+        {
+            SelectedNavItem = _backStack.Pop();
+        }
+        finally
+        {
+            _isNavigatingBack = false;
+            OnPropertyChanged(nameof(CanGoBack));
+        }
+    }
+
+    [RelayCommand]
+    private void ClearAiSidebar()
+    {
+        AiSidebarMessages.Clear();
+        AiSidebarStatus = "AI chat cleared.";
+    }
+
+    [RelayCommand]
+    private async Task AskAiSidebarAsync()
+    {
+        var prompt = AiSidebarPrompt?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            AiSidebarStatus = "Type a question first.";
+            return;
+        }
+
+        if (!IsAiSidebarEnabled)
+        {
+            AiSidebarStatus = "AI sidebar is disabled. Enable it in Settings.";
+            return;
+        }
+
+        AiSidebarBusy = true;
+        AiSidebarMessages.Add(new OllamaChatEntry
+        {
+            Role = "user",
+            Content = prompt,
+            TimestampLocal = DateTime.Now
+        });
+        AiSidebarPrompt = string.Empty;
+
+        // Local command actions first (fast and deterministic).
+        var local = TryApplyLocalAiAction(prompt);
+        if (local.Applied)
+        {
+            AiSidebarMessages.Add(new OllamaChatEntry
+            {
+                Role = "assistant",
+                Content = local.Message,
+                TimestampLocal = DateTime.Now
+            });
+            AiSidebarStatus = "Applied local action.";
+            AiSidebarBusy = false;
+            return;
+        }
+
+        var history = AiSidebarMessages.ToList();
+        var contextualPrompt = BuildAiContextPrompt(prompt);
+
+        (bool Success, string Content, string Error) result;
+        var provider = _settings.AiProvider ?? "Ollama";
+        if (string.Equals(provider, "ApiKey", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(_settings.AiApiKey))
+            {
+                AiSidebarStatus = "API provider selected but API key is empty (Settings -> AI Provider).";
+                AiSidebarBusy = false;
+                return;
+            }
+
+            var model = string.IsNullOrWhiteSpace(_settings.AiModel) ? "gpt-4o-mini" : _settings.AiModel!;
+            result = await _ollama.AskOpenAiCompatAsync(
+                _settings.AiEndpoint ?? "https://api.openai.com/v1",
+                _settings.AiApiKey!,
+                model,
+                history,
+                contextualPrompt,
+                _settings.AiUserName,
+                _settings.AiUserEmail,
+                CancellationToken.None);
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(_settings.AiModel))
+            {
+                AiSidebarStatus = "Select/pull an Ollama model first.";
+                AiSidebarBusy = false;
+                return;
+            }
+
+            result = await _ollama.AskAsync(
+                _settings.AiEndpoint ?? _settings.OllamaEndpoint ?? "http://localhost:11434",
+                _settings.AiModel!,
+                history,
+                contextualPrompt,
+                null,
+                CancellationToken.None);
+        }
+
+        AiSidebarMessages.Add(new OllamaChatEntry
+        {
+            Role = "assistant",
+            Content = result.Success ? result.Content : $"[Error] {result.Error}",
+            TimestampLocal = DateTime.Now
+        });
+        AiSidebarStatus = result.Success ? "AI response received." : "AI request failed.";
+        AiSidebarBusy = false;
+    }
+
     private void OnSerialDisconnected()
     {
         Application.Current.Dispatcher.Invoke(() =>
@@ -467,12 +674,15 @@ public partial class MainViewModel : ViewModelBase
     {
         if (info == null)
         {
-            DeviceFirmwareVersion = "Unknown";
-            DevicePort = "-";
-            DeviceVidPid = "-";
-            DeviceProduct = "-";
-            DeviceCapabilitiesText = "-";
-            FirmwareUpdateStatus = "Unknown";
+            DeviceFirmwareVersion = "—";
+            DevicePort = "—";
+            DeviceVidPid = "—";
+            DeviceProduct = "—";
+            DeviceCapabilitiesText = "—";
+            FirmwareUpdateStatus = "—";
+            SidebarClippingPercent = double.NaN;
+            SidebarOscillationDetected = null;
+            SidebarEncoderNoise = double.NaN;
             return;
         }
 
@@ -486,7 +696,7 @@ public partial class MainViewModel : ViewModelBase
         _settingsService.Save(_settings);
 
         var match = _firmwareLibrary.LoadLibrary().FirstOrDefault(f => f.Name.Contains(info.FirmwareVersion, StringComparison.OrdinalIgnoreCase));
-        FirmwareUpdateStatus = match != null ? "Library match" : "Unknown";
+        FirmwareUpdateStatus = match != null ? "Up-to-date" : "Update available";
     }
 
     private void OnSettingsSaved(AppSettings settings)
@@ -495,6 +705,114 @@ public partial class MainViewModel : ViewModelBase
         {
             LastFlashStatus = settings.LastFlashStatus!;
         }
+
+        _themeService.ApplyTheme(settings.ThemeMode);
+
+        if (IsBeginnerMode != settings.BeginnerMode)
+        {
+            IsBeginnerMode = settings.BeginnerMode;
+        }
+
+        if (IsDemoMode != settings.DemoMode)
+        {
+            IsDemoMode = settings.DemoMode;
+        }
+
+        if (IsAiSidebarEnabled != settings.AiChatEnabled)
+        {
+            IsAiSidebarEnabled = settings.AiChatEnabled;
+        }
+    }
+
+    partial void OnIsAiSidebarEnabledChanged(bool value)
+    {
+        _settings.AiChatEnabled = value;
+        _settingsService.Save(_settings);
+    }
+
+    partial void OnIsSidebarDetailsExpandedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SidebarDetailsChevronGlyph));
+    }
+
+    private void OnSidebarCalibrationChanged(CalibrationAssessment assessment)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            SidebarCalibrationStatus = !assessment.IsSupported
+                ? "—"
+                : assessment.NeedsCalibration ? "Not calibrated ⚠" : "Calibrated ✅";
+        });
+    }
+
+    private void OnSidebarPersistenceChanged(SettingsPersistenceState state)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            SidebarSaveState = state switch
+            {
+                SettingsPersistenceState.SavedToWheel => "Saved to Wheel",
+                SettingsPersistenceState.SavedToPc => "Saved to PC",
+                SettingsPersistenceState.UnsavedChanges => "Unsaved changes",
+                _ => "—"
+            };
+        });
+    }
+
+    private void OnSidebarDashboardChanged(DashboardHostState state)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            SidebarPhoneDashboardStatus = state.IsRunning ? "Running" : "Stopped";
+        });
+    }
+
+    private void OnSidebarStatsUpdated(TelemetryStats stats)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            SidebarClippingPercent = stats.ClippingPercent;
+        });
+    }
+
+    private void OnSidebarSamplesUpdated()
+    {
+        var samples = _telemetry.GetSamplesSnapshot();
+        if (samples.Count < 3)
+        {
+            return;
+        }
+
+        var window = samples.TakeLast(200).ToList();
+        var zeroCrossings = 0;
+        var lastSign = Math.Sign(window[0].Velocity);
+        for (var i = 1; i < window.Count; i++)
+        {
+            var sign = Math.Sign(window[i].Velocity);
+            if (sign != 0 && lastSign != 0 && sign != lastSign)
+            {
+                zeroCrossings++;
+            }
+
+            if (sign != 0)
+            {
+                lastSign = sign;
+            }
+        }
+
+        var jitter = 0d;
+        for (var i = 1; i < window.Count; i++)
+        {
+            jitter += Math.Abs(window[i].Angle - window[i - 1].Angle);
+        }
+
+        jitter /= Math.Max(1, window.Count - 1);
+
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            SidebarOscillationDetected = zeroCrossings > 18;
+            SidebarEncoderNoise = Math.Round(Math.Min(100, jitter * 10), 1);
+        });
     }
 
     private void PersistTuningState()
@@ -507,18 +825,164 @@ public partial class MainViewModel : ViewModelBase
 
     public void ApplyWindowState(Window window)
     {
-        if (_settings.WindowWidth.HasValue) window.Width = _settings.WindowWidth.Value;
-        if (_settings.WindowHeight.HasValue) window.Height = _settings.WindowHeight.Value;
-        if (_settings.WindowLeft.HasValue) window.Left = _settings.WindowLeft.Value;
-        if (_settings.WindowTop.HasValue) window.Top = _settings.WindowTop.Value;
+        static bool IsValidLength(double? value, double min, double max) =>
+            value.HasValue && double.IsFinite(value.Value) && value.Value >= min && value.Value <= max;
+
+        var screenLeft = SystemParameters.VirtualScreenLeft;
+        var screenTop = SystemParameters.VirtualScreenTop;
+        var screenWidth = Math.Max(800d, SystemParameters.VirtualScreenWidth);
+        var screenHeight = Math.Max(600d, SystemParameters.VirtualScreenHeight);
+        var maxWidth = Math.Max(900d, screenWidth);
+        var maxHeight = Math.Max(700d, screenHeight);
+
+        if (IsValidLength(_settings.WindowWidth, 900, maxWidth))
+        {
+            window.Width = _settings.WindowWidth!.Value;
+        }
+
+        if (IsValidLength(_settings.WindowHeight, 620, maxHeight))
+        {
+            window.Height = _settings.WindowHeight!.Value;
+        }
+
+        var hasLeft = IsValidLength(_settings.WindowLeft, screenLeft - screenWidth, screenLeft + (screenWidth * 2));
+        var hasTop = IsValidLength(_settings.WindowTop, screenTop - screenHeight, screenTop + (screenHeight * 2));
+        if (hasLeft && hasTop)
+        {
+            var clampedLeft = Math.Clamp(_settings.WindowLeft!.Value, screenLeft, screenLeft + screenWidth - 120);
+            var clampedTop = Math.Clamp(_settings.WindowTop!.Value, screenTop, screenTop + screenHeight - 120);
+            window.Left = clampedLeft;
+            window.Top = clampedTop;
+        }
+        else
+        {
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        }
     }
 
     public void CaptureWindowState(Window window)
     {
-        _settings.WindowWidth = window.Width;
-        _settings.WindowHeight = window.Height;
-        _settings.WindowLeft = window.Left;
-        _settings.WindowTop = window.Top;
+        if (double.IsFinite(window.Width) && window.Width > 0)
+        {
+            _settings.WindowWidth = window.Width;
+        }
+
+        if (double.IsFinite(window.Height) && window.Height > 0)
+        {
+            _settings.WindowHeight = window.Height;
+        }
+
+        if (double.IsFinite(window.Left))
+        {
+            _settings.WindowLeft = window.Left;
+        }
+
+        if (double.IsFinite(window.Top))
+        {
+            _settings.WindowTop = window.Top;
+        }
+
+        _settingsService.Save(_settings);
+    }
+
+    private (bool Applied, string Message) TryApplyLocalAiAction(string prompt)
+    {
+        // Simple global navigation intents.
+        var navTarget = Regex.Match(prompt, @"\b(go to|open|switch to)\s+(home|setup|wizard|firmware|tuning|profiles|timeline|snapshots|diagnostics|telemetry|phone|settings)\b", RegexOptions.IgnoreCase);
+        if (navTarget.Success)
+        {
+            var key = navTarget.Groups[2].Value.ToLowerInvariant();
+            key = key switch
+            {
+                "wizard" => "wizard",
+                "setup" => "wizard",
+                "timeline" => "snapshots",
+                _ => key
+            };
+            NavigateTo(key);
+            return (true, $"Navigated to {key}.");
+        }
+
+        if (CurrentViewModel is SetupWizardViewModel wizard)
+        {
+            var result = wizard.ApplyNaturalLanguageConfig(prompt);
+            if (result.Applied)
+            {
+                return (true, result.Summary);
+            }
+        }
+
+        if (CurrentViewModel is FfbTuningViewModel tuning)
+        {
+            var result = tuning.ApplyNaturalLanguageTuning(prompt);
+            if (result.Applied)
+            {
+                return (true, result.Summary);
+            }
+        }
+
+        return (false, string.Empty);
+    }
+
+    private string BuildAiContextPrompt(string prompt)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("You are assisting inside a wheel control center desktop app.");
+        sb.AppendLine($"Current page: {SelectedNavItem?.Title ?? "Unknown"}");
+
+        if (CurrentViewModel is SetupWizardViewModel wizard)
+        {
+            sb.AppendLine("Page context:");
+            sb.AppendLine($"- Step: {wizard.StepIndex + 1}");
+            sb.AppendLine($"- RPWM: {wizard.RpwmPin}, LPWM: {wizard.LpwmPin}");
+            sb.AppendLine($"- Encoder A/B: {wizard.EncoderAPin}/{wizard.EncoderBPin}");
+            sb.AppendLine($"- PWM mode: {wizard.PwmMode}");
+        }
+        else if (CurrentViewModel is FfbTuningViewModel tuning)
+        {
+            sb.AppendLine("Page context:");
+            sb.AppendLine($"- Strength: {tuning.GeneralGain}");
+            sb.AppendLine($"- Damping/Friction/Inertia: {tuning.DamperGain}/{tuning.FrictionGain}/{tuning.InertiaGain}");
+            sb.AppendLine($"- Spring: {tuning.SpringGain}");
+        }
+
+        sb.AppendLine("User request:");
+        sb.Append(prompt);
+        return sb.ToString();
+    }
+
+    public void EnsureFirstRunProfile(Window owner)
+    {
+        if (_firstRunPromptShown)
+        {
+            return;
+        }
+
+        _firstRunPromptShown = true;
+        if (!string.IsNullOrWhiteSpace(_settings.AiUserName) &&
+            !string.IsNullOrWhiteSpace(_settings.AiUserEmail) &&
+            !string.IsNullOrWhiteSpace(_settings.AiProvider))
+        {
+            return;
+        }
+
+        var dialog = new FirstRunProfileWindow(_settings.AiUserName, _settings.AiUserEmail)
+        {
+            Owner = owner
+        };
+
+        var accepted = dialog.ShowDialog() == true;
+        if (!accepted)
+        {
+            return;
+        }
+
+        _settings.AiUserName = dialog.UserName;
+        _settings.AiUserEmail = dialog.UserEmail;
+        _settings.AiProvider = dialog.Provider;
+        _settings.AiEndpoint = dialog.Endpoint;
+        _settings.AiApiKey = dialog.ApiKey;
+        _settings.AiChatEnabled = true;
         _settingsService.Save(_settings);
     }
 }

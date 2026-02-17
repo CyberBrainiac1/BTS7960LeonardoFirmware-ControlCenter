@@ -8,6 +8,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Theme.xaml" />
                 <ResourceDictionary Source="Resources/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
@@ -15,6 +16,9 @@
             <helpers:InverseBooleanConverter x:Key="InverseBool" />
             <helpers:StepVisibilityConverter x:Key="StepVisibility" />
             <helpers:BoolToBrushConverter x:Key="BoolToBrush" />
+            <helpers:BoolToStatusTextConverter x:Key="BoolToStatusText" />
+            <helpers:PercentOrNaConverter x:Key="PercentOrNa" />
+            <helpers:DoubleOrNaConverter x:Key="DoubleOrNa" />
 
             <DataTemplate DataType="{x:Type vm:HomeViewModel}">
                 <views:HomeView />
@@ -63,6 +67,9 @@
             </DataTemplate>
             <DataTemplate DataType="{x:Type vm:OllamaViewModel}">
                 <views:OllamaView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                <views:SettingsView />
             </DataTemplate>
         </ResourceDictionary>
     </Application.Resources>

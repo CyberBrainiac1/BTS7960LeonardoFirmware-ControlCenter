@@ -4,37 +4,34 @@
              xmlns:helpers="clr-namespace:ArduinoFFBControlCenter.Helpers">
     <Grid Margin="24">
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2.2*" />
+            <ColumnDefinition Width="3.3*" />
             <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="3*" />
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
             <StackPanel helpers:PanelSpacing.Spacing="8">
-                <TextBlock Text="Ollama Side View" FontSize="16" FontWeight="SemiBold" />
-                <TextBlock Text="Ask about settings, errors, and what is visible on your screen." Foreground="{StaticResource MutedText}" TextWrapping="Wrap" />
+                <TextBlock Text="AI Context Tools" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Capture wheel-control screens and include context for troubleshooting."
+                           Foreground="{StaticResource MutedText}"
+                           TextWrapping="Wrap" />
 
-                <TextBlock Text="Endpoint" Foreground="{StaticResource MutedText}" />
-                <TextBox Text="{Binding Endpoint, UpdateSourceTrigger=PropertyChanged}" />
+                <CheckBox Content="Include current screen in prompt (Ollama vision mode)"
+                          IsChecked="{Binding IncludeScreen}" />
 
-                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
-                    <Button Content="Refresh Models" Command="{Binding RefreshModelsCommand}" />
-                    <ComboBox Width="220" ItemsSource="{Binding Models}" SelectedItem="{Binding SelectedModel}" />
-                </StackPanel>
-
-                <CheckBox Content="Include current screen in prompt (vision model required)" IsChecked="{Binding IncludeScreen}" Foreground="{StaticResource MutedText}" />
                 <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
                     <Button Content="Capture Screen Now" Command="{Binding CaptureScreenCommand}" />
                     <Button Content="Clear Chat" Command="{Binding ClearChatCommand}" />
                 </StackPanel>
 
                 <TextBlock Text="{Binding LastCaptureInfo}" Foreground="{StaticResource MutedText}" />
-                <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="8" Padding="4" Height="160">
+                <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="1" CornerRadius="8" Padding="4" Height="200">
                     <Image Source="{Binding LastCapturePreview}" Stretch="Uniform" />
                 </Border>
             </StackPanel>
         </Border>
 
-        <Border Grid.Column="1" Style="{StaticResource Card}">
+        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,12,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
@@ -45,11 +42,19 @@
                     <ItemsControl ItemsSource="{Binding Messages}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="0,0,0,8" Padding="10" BorderThickness="1" CornerRadius="8" BorderBrush="{StaticResource CardBorder}" Background="#0F151C">
+                                <Border Margin="0,0,0,8"
+                                        Padding="10"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        BorderBrush="{StaticResource CardBorder}"
+                                        Background="#0F151C">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Role}" FontWeight="SemiBold" Foreground="{StaticResource Accent2}" />
                                         <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Margin="0,4,0,0" />
-                                        <TextBlock Text="{Binding TimestampLocal, StringFormat={}{0:HH:mm:ss}}" Foreground="{StaticResource MutedText}" FontSize="11" Margin="0,6,0,0" />
+                                        <TextBlock Text="{Binding TimestampLocal, StringFormat={}{0:HH:mm:ss}}"
+                                                   Foreground="{StaticResource MutedText}"
+                                                   FontSize="11"
+                                                   Margin="0,6,0,0" />
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
@@ -59,10 +64,70 @@
 
                 <StackPanel Grid.Row="1" helpers:PanelSpacing.Spacing="8">
                     <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedText}" />
-                    <TextBox Text="{Binding Prompt, UpdateSourceTrigger=PropertyChanged}" Height="96" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
-                    <Button Content="Ask Ollama" Command="{Binding AskCommand}" Style="{StaticResource AccentButton}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                    <TextBox Text="{Binding Prompt, UpdateSourceTrigger=PropertyChanged}"
+                             Height="120"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             TextWrapping="Wrap" />
+                    <Button Content="Ask AI"
+                            Command="{Binding AskCommand}"
+                            Style="{StaticResource AccentButton}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
                 </StackPanel>
             </Grid>
+        </Border>
+
+        <Border Grid.Column="2" Style="{StaticResource Card}">
+            <StackPanel helpers:PanelSpacing.Spacing="8">
+                <TextBlock Text="AI Sidebar" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="Read-only here. Change provider/key in Settings."
+                           Foreground="{StaticResource MutedText}"
+                           TextWrapping="Wrap" />
+
+                <Border Style="{StaticResource StatusPillWarning}" Visibility="{Binding NeedsUserIdentity, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="Name + email needed for first-time setup." />
+                </Border>
+
+                <TextBox Style="{StaticResource FloatingTextBox}"
+                         helpers:FloatingField.Label="Name"
+                         Text="{Binding UserName}"
+                         IsReadOnly="True" />
+                <TextBox Style="{StaticResource FloatingTextBox}"
+                         helpers:FloatingField.Label="Email"
+                         Text="{Binding UserEmail}"
+                         IsReadOnly="True" />
+                <TextBox Style="{StaticResource FloatingTextBox}"
+                         helpers:FloatingField.Label="API Key"
+                         Text="{Binding ApiKey}"
+                         IsReadOnly="True" />
+                <TextBox Style="{StaticResource FloatingTextBox}"
+                         helpers:FloatingField.Label="Endpoint"
+                         Text="{Binding Endpoint}"
+                         IsReadOnly="True" />
+
+                <ComboBox Style="{StaticResource FloatingComboBox}"
+                          helpers:FloatingField.Label="Model"
+                          IsEditable="False"
+                          IsEnabled="False"
+                          ItemsSource="{Binding Models}"
+                          SelectedItem="{Binding SelectedModel}" />
+
+                <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8">
+                    <Button Content="Refresh Models"
+                            Width="122"
+                            Command="{Binding RefreshModelsCommand}" />
+                </StackPanel>
+
+                <Button Content="Test API Key"
+                        Style="{StaticResource AccentButton}"
+                        Command="{Binding TestApiKeyCommand}"
+                        IsEnabled="{Binding IsApiKeyMode}" />
+
+                <TextBlock Text="{Binding SettingsFilePath}"
+                           Foreground="{StaticResource MutedText}"
+                           FontSize="11"
+                           TextWrapping="Wrap" />
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

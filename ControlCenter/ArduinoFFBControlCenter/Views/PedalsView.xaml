@@ -20,17 +20,17 @@
 
                     <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" IsEnabled="{Binding HasPedals}">
                         <TextBlock Text="Throttle" Width="80" VerticalAlignment="Center" />
-                        <ComboBox Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding ThrottleAxis}" />
+                        <ComboBox Style="{StaticResource FloatingComboBox}" Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding ThrottleAxis}" />
                         <Button Content="Detect" Command="{Binding DetectThrottleCommand}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" IsEnabled="{Binding HasPedals}">
                         <TextBlock Text="Brake" Width="80" VerticalAlignment="Center" />
-                        <ComboBox Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding BrakeAxis}" />
+                        <ComboBox Style="{StaticResource FloatingComboBox}" Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding BrakeAxis}" />
                         <Button Content="Detect" Command="{Binding DetectBrakeCommand}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" IsEnabled="{Binding HasPedals}">
                         <TextBlock Text="Clutch" Width="80" VerticalAlignment="Center" />
-                        <ComboBox Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding ClutchAxis}" />
+                        <ComboBox Style="{StaticResource FloatingComboBox}" Width="120" ItemsSource="{Binding AxisOptions}" SelectedItem="{Binding ClutchAxis}" />
                         <Button Content="Detect" Command="{Binding DetectClutchCommand}" />
                     </StackPanel>
 
@@ -82,5 +82,6 @@
         </Grid>
     </ScrollViewer>
 </UserControl>
+
 
 

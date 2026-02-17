@@ -17,6 +17,22 @@ The app is an end-to-end control center that handles:
 - local phone dashboard (LAN)
 - local Ollama AI side-view (optional)
 
+## UI Refresh (React-like Material style)
+The app now uses a redesigned visual system with:
+- brighter modern palette (Soft Dark + optional Light mode)
+- elevated cards and polished button states
+- floating-label form fields for setup/firmware/settings flows
+- themed dropdown popups (no default white combo popup)
+- commit-style timeline rows
+- Home dashboard with health meters + phone dashboard QR preview
+
+UI review checklist:
+- ComboBox popup is themed and readable in both themes
+- Focus ring and hover states are visible on all form controls
+- Setup Wizard pin mapping uses floating form controls
+- Home shows device card, health meters, recent timeline, and phone dashboard card
+- No default WPF gray controls should remain in key workflows
+
 ## 2) Core Firmware Rules (Important)
 This app follows Arduino-FFB-wheel assumptions:
 - normal users flash precompiled `.hex` files
@@ -34,14 +50,47 @@ The UI is capability-driven:
 
 Note: Kid mode was removed from the visible UX and forced off in runtime.
 
+## 3.1) Arduino CLI (needed for "Send as .ino" mode)
+If you enable custom pinout build mode, the app compiles firmware from source using `arduino-cli`.
+
+Official docs:
+- Installation guide: https://arduino.github.io/arduino-cli/latest/installation/
+- Releases: https://github.com/arduino/arduino-cli/releases
+
+Quick Windows install (PowerShell):
+```powershell
+winget install arduino.arduino-cli
+```
+
+Seamless behavior in app:
+- if `Send as .ino` is enabled and `arduino-cli` is missing, the app auto-downloads the latest Windows x64 Arduino CLI release into:
+  - `%AppData%/ArduinoFFBControlCenter/tools/arduino-cli/`
+- then it auto-runs:
+  - `arduino-cli core update-index`
+  - `arduino-cli core install arduino:avr`
+- so the user usually does not need to install Arduino CLI manually.
+
+Then verify:
+```powershell
+arduino-cli version
+arduino-cli core update-index
+arduino-cli core install arduino:avr
+```
+
 ## 4) Main User Flow
 1. Open Setup Wizard
 2. Confirm wiring (BTS7960 + encoder + pedals)
-3. Detect device + choose HEX
+3. Detect device + choose HEX (default is `Recommended - BTS7960 Default Stable`)
 4. Flash firmware
 5. Calibrate (center, direction, rotation)
 6. Apply baseline preset
 7. Save to wheel (EEPROM) or PC fallback
+
+## 4.1) Default HEX + Custom HEX behavior
+- The app now includes one primary default firmware:
+  - `Assets/FirmwareLibrary/Leonardo/recommended/wheel_default_recommended.hex`
+- This is auto-selected in Setup Wizard and Factory Restore for fastest "just works" setup.
+- If pinout differs from default, the app can still build a custom pinout HEX (`Send as .ino` mode) and flash that instead.
 
 ## 5) Firmware Flashing Logic
 Implemented in `Services/FirmwareFlasherService.cs`:
@@ -111,6 +160,10 @@ Features:
 - ask questions from inside app
 - optional full-screen screenshot context
 - fallback to text-only if selected model rejects images
+- global AI sidebar available on every page (can be disabled in Settings)
+- local action routing: AI can apply Setup pin mappings and FFB tuning values from prompts
+- setup wizard includes AI provider choice (`Ollama` or `ApiKey`)
+- after setup, provider/key changes are managed from `Settings` page
 
 Setup:
 1. install Ollama
@@ -227,3 +280,4 @@ These are ignored by `.gitignore` and recreated automatically on build.
 - Original firmware: Milos Rankovic (ranenbg)
 - Original repo: https://github.com/ranenbg/Arduino-FFB-wheel
 - Legacy GUI: https://github.com/ranenbg/Arduino-FFB-gui
+- Windows Control Center and integration work: built with **OpenAI Codex**

@@ -13,6 +13,8 @@ public class AppSettings
     public string? LastDeviceName { get; set; }
     public bool AutoConnect { get; set; } = true;
     public bool TelemetryEnabled { get; set; } = true;
+    public bool SendAsInoMode { get; set; }
+    public bool ForcePinoutBuild { get; set; }
     public string? LastFirmwareHex { get; set; }
     public string? LastKnownGoodHex { get; set; }
     public string? LastFlashStatus { get; set; }
@@ -48,9 +50,17 @@ public class AppSettings
     public string? DashboardPin { get; set; }
     public bool DashboardRequirePin { get; set; } = true;
     public bool DashboardAdvancedRemote { get; set; }
+    public string ThemeMode { get; set; } = "Light";
     public string? OllamaEndpoint { get; set; } = "http://localhost:11434";
     public string? OllamaModel { get; set; }
     public bool OllamaIncludeScreenCapture { get; set; } = true;
+    public string? AiUserName { get; set; }
+    public string? AiUserEmail { get; set; }
+    public string AiProvider { get; set; } = "Ollama";
+    public string? AiApiKey { get; set; }
+    public string? AiEndpoint { get; set; }
+    public string? AiModel { get; set; }
+    public bool AiChatEnabled { get; set; } = true;
     public bool BeginnerMode { get; set; } = true;
     public bool KidMode { get; set; }
     public bool DemoMode { get; set; }
@@ -66,17 +76,38 @@ public class SettingsService
     // Loads persisted settings and backfills new fields with safe defaults.
     public AppSettings Load()
     {
-        AppSettings settings;
         if (!File.Exists(AppPaths.SettingsFile))
         {
-            settings = new AppSettings();
+            var settings = new AppSettings();
             EnsureDefaults(settings);
             return settings;
         }
-        var json = File.ReadAllText(AppPaths.SettingsFile);
-        settings = JsonSerializer.Deserialize<AppSettings>(json, _options) ?? new AppSettings();
-        EnsureDefaults(settings);
-        return settings;
+
+        try
+        {
+            var json = File.ReadAllText(AppPaths.SettingsFile);
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, _options) ?? new AppSettings();
+            EnsureDefaults(settings);
+            return settings;
+        }
+        catch
+        {
+            // Corrupt/old settings should never block startup.
+            var backup = $"{AppPaths.SettingsFile}.corrupt.{DateTime.UtcNow:yyyyMMddHHmmss}.bak";
+            try
+            {
+                File.Copy(AppPaths.SettingsFile, backup, overwrite: false);
+            }
+            catch
+            {
+                // Ignore backup failures and continue with defaults.
+            }
+
+            var settings = new AppSettings();
+            EnsureDefaults(settings);
+            Save(settings);
+            return settings;
+        }
     }
 
     // Saves settings atomically as a single JSON file.
@@ -110,9 +141,42 @@ public class SettingsService
             settings.OllamaEndpoint = "http://localhost:11434";
         }
 
+        if (string.IsNullOrWhiteSpace(settings.AiEndpoint))
+        {
+            settings.AiEndpoint = settings.OllamaEndpoint;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.AiModel))
+        {
+            settings.AiModel = settings.OllamaModel;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.AiProvider))
+        {
+            settings.AiProvider = string.IsNullOrWhiteSpace(settings.AiApiKey) ? "Ollama" : "ApiKey";
+        }
+
+        // Keep chat enabled by default for first run.
+        if (!settings.AiChatEnabled)
+        {
+            // preserve explicit user opt-out if profile already has identity or provider configured
+            var hasAiConfig = !string.IsNullOrWhiteSpace(settings.AiUserName)
+                              || !string.IsNullOrWhiteSpace(settings.AiApiKey)
+                              || !string.IsNullOrWhiteSpace(settings.AiProvider);
+            if (!hasAiConfig)
+            {
+                settings.AiChatEnabled = true;
+            }
+        }
+
         if (settings.DashboardPort <= 0 || settings.DashboardPort > 65535)
         {
             settings.DashboardPort = 10500;
+        }
+
+        if (string.IsNullOrWhiteSpace(settings.ThemeMode))
+        {
+            settings.ThemeMode = "Light";
         }
     }
 }

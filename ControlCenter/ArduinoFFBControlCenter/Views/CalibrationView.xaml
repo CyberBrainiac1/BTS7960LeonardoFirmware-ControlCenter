@@ -62,6 +62,13 @@
                         <Button Content="Apply" Command="{Binding ApplyRotationCommand}" />
                         <Button Content="Verify Range" Command="{Binding VerifyRotationCommand}" />
                     </StackPanel>
+                    <Button Content="Motor Auto-Calibrate Rotation (Test)"
+                            Command="{Binding RunMotorRotationCalibrationCommand}"
+                            Style="{StaticResource AccentButton}"
+                            IsEnabled="{Binding CanRunMotorCalibration}"
+                            Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding MotorCalibrationNotice}" Foreground="{StaticResource MutedText}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding MotorCalibrationStatus}" Foreground="{StaticResource MutedText}" Margin="0,2,0,0" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding RotationStatus}" Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
                 </StackPanel>
             </Border>

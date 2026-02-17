@@ -27,6 +27,7 @@ public partial class CalibrationViewModel : ViewModelBase
     [ObservableProperty] private string centerStatus = "Not captured";
     [ObservableProperty] private string directionStatus = "Not tested";
     [ObservableProperty] private string rotationStatus = "Not set";
+    [ObservableProperty] private string motorCalibrationStatus = "Not run";
     [ObservableProperty] private string saveStatus = "Not saved";
     [ObservableProperty] private string lastCalibrationTimestamp = "Unknown";
 
@@ -38,6 +39,9 @@ public partial class CalibrationViewModel : ViewModelBase
 
     [ObservableProperty] private bool canSaveToWheel;
     [ObservableProperty] private string saveNotice = string.Empty;
+
+    [ObservableProperty] private bool canRunMotorCalibration;
+    [ObservableProperty] private string motorCalibrationNotice = "Connect a device to run motor-assisted calibration.";
 
     public CalibrationViewModel(LoggerService logger, CalibrationService calibration, DeviceSettingsService settings, DeviceStateService deviceState, DeviceCapabilitiesService caps, TuningStateService tuningState, SnapshotService snapshots)
     {
@@ -182,6 +186,37 @@ public partial class CalibrationViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task RunMotorRotationCalibrationAsync()
+    {
+        if (!CanRunMotorCalibration && !_deviceState.IsDemoMode)
+        {
+            MotorCalibrationStatus = "Motor-assisted calibration requires serial config support.";
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            MotorCalibrationStatus = "Running motor-assisted calibration. Keep hands clear.";
+            var result = await _calibration.RunMotorRotationCalibrationAsync(CancellationToken.None);
+            MotorCalibrationStatus = result.Message;
+            if (result.Success)
+            {
+                RotationStatus = "Motor-assisted calibration finished.";
+                _ = _calibration.AssessAsync(_tuningState.CurrentConfig, CancellationToken.None);
+            }
+        }
+        catch (Exception ex)
+        {
+            MotorCalibrationStatus = $"Motor calibration failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task SaveAsync()
     {
         IsBusy = true;
@@ -237,6 +272,8 @@ public partial class CalibrationViewModel : ViewModelBase
         {
             CanUseSerialConfig = false;
             SerialConfigNotice = "Connect a device to calibrate.";
+            CanRunMotorCalibration = false;
+            MotorCalibrationNotice = "Connect a device to run motor-assisted calibration.";
             CanSaveToWheel = false;
             SaveNotice = "Connect a device to save.";
             return;
@@ -245,6 +282,11 @@ public partial class CalibrationViewModel : ViewModelBase
         var caps = _caps.GetCapabilities(info);
         CanUseSerialConfig = caps.SupportsSerialConfig || info.IsDemo;
         SerialConfigNotice = CanUseSerialConfig ? string.Empty : "Serial config not supported by firmware.";
+
+        CanRunMotorCalibration = caps.SupportsSerialConfig || info.IsDemo;
+        MotorCalibrationNotice = CanRunMotorCalibration
+            ? "Runs firmware calibration routine (R command) and verifies encoder movement."
+            : "Motor-assisted calibration is disabled for this firmware.";
 
         CanSaveToWheel = caps.SupportsEepromSave && caps.SupportsSerialConfig;
         SaveNotice = CanSaveToWheel ? string.Empty : "Save to wheel disabled (no EEPROM).";

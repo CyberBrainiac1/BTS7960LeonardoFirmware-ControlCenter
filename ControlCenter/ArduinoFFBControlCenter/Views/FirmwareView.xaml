@@ -25,7 +25,7 @@
             <Border Style="{StaticResource Card}">
                 <StackPanel>
                     <TextBlock Text="Port" FontWeight="SemiBold" />
-                    <ComboBox ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}" Margin="0,6,0,0" />
+                    <ComboBox Style="{StaticResource FloatingComboBox}" helpers:FloatingField.Label="Target COM" ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding SelectedPort}" Margin="0,6,0,0" />
                     <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,6,0,0">
                         <Button Content="Scan Ports" Command="{Binding ScanPortsCommand}" />
                         <Button Content="Auto-Detect" Command="{Binding AutoDetectPortCommand}" />
@@ -53,5 +53,6 @@
         </Border>
     </Grid>
 </UserControl>
+
 
 

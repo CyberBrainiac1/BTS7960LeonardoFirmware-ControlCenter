@@ -20,6 +20,8 @@ public partial class FirmwareViewModel : ViewModelBase
     private readonly DeviceManagerService _deviceManager;
     private readonly DeviceProtocolService _protocol;
     private readonly SnapshotService _snapshots;
+    private readonly CustomFirmwareBuilderService _builder;
+    private readonly WizardStateService _wizardState;
 
     public ObservableCollection<FirmwareHexInfo> FirmwareOptions { get; } = new();
     public ObservableCollection<string> AvailablePorts { get; } = new();
@@ -51,7 +53,7 @@ public partial class FirmwareViewModel : ViewModelBase
     [ObservableProperty]
     private bool canRollback;
 
-    public FirmwareViewModel(LoggerService logger, FirmwareFlasherService flasher, FirmwareLibraryService library, SettingsService settingsService, AppSettings settings, DeviceManagerService deviceManager, DeviceProtocolService protocol, SnapshotService snapshots)
+    public FirmwareViewModel(LoggerService logger, FirmwareFlasherService flasher, FirmwareLibraryService library, SettingsService settingsService, AppSettings settings, DeviceManagerService deviceManager, DeviceProtocolService protocol, SnapshotService snapshots, CustomFirmwareBuilderService builder, WizardStateService wizardState)
     {
         _logger = logger;
         _flasher = flasher;
@@ -61,6 +63,8 @@ public partial class FirmwareViewModel : ViewModelBase
         _deviceManager = deviceManager;
         _protocol = protocol;
         _snapshots = snapshots;
+        _builder = builder;
+        _wizardState = wizardState;
 
         ReloadLibrary();
         ScanPorts();
@@ -82,7 +86,9 @@ public partial class FirmwareViewModel : ViewModelBase
         }
         else
         {
-            SelectedFirmware = FirmwareOptions.FirstOrDefault();
+            SelectedFirmware = FirmwareOptions.FirstOrDefault(f => f.Name.StartsWith("Recommended", StringComparison.OrdinalIgnoreCase))
+                               ?? FirmwareOptions.FirstOrDefault(f => f.Name.Contains("v250", StringComparison.OrdinalIgnoreCase))
+                               ?? FirmwareOptions.FirstOrDefault();
         }
     }
 
@@ -139,7 +145,7 @@ public partial class FirmwareViewModel : ViewModelBase
     [RelayCommand]
     private async Task FlashSelectedAsync()
     {
-        if (SelectedFirmware == null)
+        if (SelectedFirmware == null && !_settings.SendAsInoMode)
         {
             _logger.Warn("Select a HEX file first.");
             return;
@@ -154,31 +160,74 @@ public partial class FirmwareViewModel : ViewModelBase
         IsFlashing = true;
         FlashStatus = "Flashing...";
         FlashHint = string.Empty;
-        var progress = new Progress<string>(line =>
-        {
-            FlashLog += line + "\n";
-        });
+        string? hexPath = SelectedFirmware?.Path;
+        var customUsed = false;
 
-        var result = await _flasher.FlashWithRetryAsync(SelectedFirmware.Path, SelectedPort, progress, CancellationToken.None);
+        // Firmware send mode comes from Settings page:
+        // - Send as .ino => always build from source + wiring
+        // - Send HEX/Firmware => flash selected hex, unless non-default pinout/force build requires a custom build
+        var wiring = _wizardState.Load().Wiring ?? new WiringConfig();
+        var requiresPinoutBuild = _settings.SendAsInoMode || _settings.ForcePinoutBuild || !wiring.IsDefaultLeonardo();
+        if (requiresPinoutBuild)
+        {
+            FlashStatus = _settings.SendAsInoMode ? "Building from .ino..." : "Building custom pinout HEX...";
+            var build = await _builder.BuildAsync(wiring, CancellationToken.None);
+            FlashLog += build.OutputLog + "\n";
+            if (!build.Success || string.IsNullOrWhiteSpace(build.HexPath))
+            {
+                IsFlashing = false;
+                FlashStatus = "Build failed";
+                FlashHint = build.Message;
+                return;
+            }
+
+            hexPath = build.HexPath;
+            customUsed = true;
+            FlashLog += $"Using custom HEX: {hexPath}\n";
+
+            var existing = FirmwareOptions.FirstOrDefault(f => string.Equals(f.Path, hexPath, StringComparison.OrdinalIgnoreCase));
+            if (existing == null)
+            {
+                existing = new FirmwareHexInfo
+                {
+                    Name = $"Custom Pinout {DateTime.Now:HH:mm:ss}",
+                    Path = hexPath,
+                    Notes = "Auto-built from settings + wiring"
+                };
+                FirmwareOptions.Insert(0, existing);
+            }
+            SelectedFirmware = existing;
+        }
+
+        if (string.IsNullOrWhiteSpace(hexPath))
+        {
+            IsFlashing = false;
+            FlashStatus = "No firmware selected";
+            FlashHint = "Select a HEX file or enable 'send as .ino' in Settings.";
+            return;
+        }
+
+        var progress = new Progress<string>(line => FlashLog += line + "\n");
+        var result = await _flasher.FlashWithRetryAsync(hexPath, SelectedPort, progress, CancellationToken.None);
         IsFlashing = false;
 
         if (result.Success)
         {
-            _settings.LastFirmwareHex = SelectedFirmware.Path;
+            _settings.LastFirmwareHex = hexPath;
             _settings.LastPort = SelectedPort;
-            _settings.LastKnownGoodHex = SelectedFirmware.Path;
+            _settings.LastKnownGoodHex = hexPath;
             _settings.LastFlashStatus = "Success";
             _settings.LastFlashUtc = DateTime.UtcNow;
             _settingsService.Save(_settings);
             UpdateLastGood();
-            FlashStatus = "Flash complete.";
+            FlashStatus = customUsed ? "Flash complete (custom pinout firmware)." : "Flash complete.";
             FlashHint = "Verifying firmware...";
             _snapshots.CreateSnapshot(new SnapshotEntry
             {
                 Kind = SnapshotKind.Flash,
-                Label = $"Flash {SelectedFirmware.Name}",
-                FirmwareHexPath = SelectedFirmware.Path,
-                FirmwareVersion = SelectedFirmware.Name
+                Label = customUsed ? "Flash custom pinout firmware" : $"Flash {SelectedFirmware?.Name}",
+                FirmwareHexPath = hexPath,
+                FirmwareVersion = SelectedFirmware?.Name ?? Path.GetFileNameWithoutExtension(hexPath)
             });
             if (!_deviceManager.IsConnected)
             {
@@ -291,10 +340,11 @@ public partial class FirmwareViewModel : ViewModelBase
     [RelayCommand]
     private async Task FactoryRestoreAsync()
     {
-        var stable = FirmwareOptions.FirstOrDefault(f => f.Name.Contains("v250", StringComparison.OrdinalIgnoreCase));
+        var stable = FirmwareOptions.FirstOrDefault(f => f.Name.StartsWith("Recommended", StringComparison.OrdinalIgnoreCase))
+                     ?? FirmwareOptions.FirstOrDefault(f => f.Name.Contains("v250", StringComparison.OrdinalIgnoreCase));
         if (stable == null)
         {
-            _logger.Warn("No stable v250 HEX found in library.");
+            _logger.Warn("No recommended/stable HEX found in library.");
             return;
         }
         SelectedFirmware = stable;

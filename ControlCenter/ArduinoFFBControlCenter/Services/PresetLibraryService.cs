@@ -112,6 +112,25 @@ public static class PresetLibraryService
             },
             new PresetProfile
             {
+                Name = "BeamNG.drive (Baseline)",
+                Description = "Stable baseline for BeamNG with extra damping to control spikes and oscillation.",
+                Config = new FfbConfig
+                {
+                    GeneralGain = 82,
+                    DamperGain = 50,
+                    FrictionGain = 40,
+                    InertiaGain = 30,
+                    SpringGain = 70,
+                    ConstantGain = 82,
+                    PeriodicGain = 78,
+                    CenterGain = 55,
+                    StopGain = 105,
+                    MinTorque = 0,
+                    RotationDeg = 900
+                }
+            },
+            new PresetProfile
+            {
                 Name = "rFactor2 (Baseline)",
                 Description = "Higher damping for stability.",
                 Config = new FfbConfig

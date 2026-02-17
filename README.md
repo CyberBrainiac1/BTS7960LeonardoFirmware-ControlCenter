@@ -7,8 +7,12 @@ Fork of Arduino-FFB-wheel with a full Windows Control Center app.
 - Original repository: https://github.com/ranenbg/Arduino-FFB-wheel
 - Legacy GUI: https://github.com/ranenbg/Arduino-FFB-gui
 
+## Built With Codex
+- This fork and the Windows Control Center implementation were built and iterated with **OpenAI Codex**.
+
 ## What This Fork Adds
 - Windows WPF Control Center (`ControlCenter/`)
+- modernized UI theme system (Soft Dark + Light toggle in Settings)
 - hardened Leonardo flashing + reset + rollback
 - setup wizard with wiring validation (BTS7960 + encoder + pedals)
 - calibration workflow + persistence tracking
@@ -44,6 +48,22 @@ This project follows the original workflow:
 - flash precompiled HEX for end users
 - option letters in firmware version determine available features
 - serial configuration depends on firmware capabilities
+- app default now uses one curated stable HEX:
+  - `ControlCenter/ArduinoFFBControlCenter/Assets/FirmwareLibrary/Leonardo/recommended/wheel_default_recommended.hex`
+- custom pinout builds are still available from app Settings (`Send as .ino`).
+
+If you use the app setting `Send as .ino` (custom pinout build), install Arduino CLI first:
+- https://arduino.github.io/arduino-cli/latest/installation/
+- https://github.com/arduino/arduino-cli/releases
+
+Quick Windows command:
+```powershell
+winget install arduino.arduino-cli
+```
+
+Seamless mode:
+- When app setting `Send as .ino` is enabled, the app can auto-download Arduino CLI and auto-install `arduino:avr` core if missing.
+- Manual install is only needed if internet access/policy blocks auto setup.
 
 ## Local Cleanup (non-needed generated files)
 If you want a clean workspace, remove generated build outputs:

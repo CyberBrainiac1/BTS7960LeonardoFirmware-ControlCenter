@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ArduinoFFBControlCenter.Models;
@@ -14,6 +15,9 @@ namespace ArduinoFFBControlCenter.ViewModels;
 /// </summary>
 public partial class SetupWizardViewModel : ViewModelBase
 {
+    // Temporary product mode: keep steering pinout fixed for reliability tests.
+    public bool IsPinMappingLocked => true;
+
     private readonly LoggerService _logger;
     private readonly DeviceManagerService _deviceManager;
     private readonly FirmwareFlasherService _flasher;
@@ -30,6 +34,11 @@ public partial class SetupWizardViewModel : ViewModelBase
     private readonly SnapshotService _snapshots;
     private WizardState _state = new();
     private bool _isInitializing = true;
+    private bool _suspendSummaryRefresh;
+
+    private static readonly Regex PinAssignmentRegex = new(
+        @"(?<key>rpwm|lpwm|r[_\s-]?en|l[_\s-]?en|encoder\s*a|encoder\s*b|e-?stop|button\s*1|button\s*2|shifter\s*x|shifter\s*y|throttle|brake|clutch)\s*(?:=|:|is|to|->)?\s*(?<pin>[ad]\d{1,2})",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public ObservableCollection<string> Ports { get; } = new();
     public ObservableCollection<FirmwareHexInfo> FirmwareOptions { get; } = new();
@@ -42,6 +51,7 @@ public partial class SetupWizardViewModel : ViewModelBase
     public ObservableCollection<string> PwmModes { get; } = new();
     public ObservableCollection<string> LogicVoltages { get; } = new();
     public ObservableCollection<string> MotorTerminals { get; } = new();
+    public ObservableCollection<string> AiProviderOptions { get; } = new();
 
     public ObservableCollection<string> WiringWarnings { get; } = new();
 
@@ -59,7 +69,7 @@ public partial class SetupWizardViewModel : ViewModelBase
     [ObservableProperty] private string? lpwmPin;
     [ObservableProperty] private string? rEnPin;
     [ObservableProperty] private string? lEnPin;
-    [ObservableProperty] private bool useEnablePins = true;
+    [ObservableProperty] private bool useEnablePins;
     [ObservableProperty] private string? encoderAPin;
     [ObservableProperty] private string? encoderBPin;
     [ObservableProperty] private string? eStopPin;
@@ -68,7 +78,7 @@ public partial class SetupWizardViewModel : ViewModelBase
     [ObservableProperty] private string? shifterXPin;
     [ObservableProperty] private string? shifterYPin;
 
-    [ObservableProperty] private bool hasPedals = true;
+    [ObservableProperty] private bool hasPedals;
     [ObservableProperty] private string? throttlePin;
     [ObservableProperty] private string? brakePin;
     [ObservableProperty] private string? clutchPin;
@@ -83,9 +93,15 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     [ObservableProperty] private string wiringSummary = string.Empty;
     [ObservableProperty] private bool wiringValid = true;
+    [ObservableProperty] private string gamePresetStatus = "Not run";
 
     [ObservableProperty] private bool useCustomBuild;
     [ObservableProperty] private string customBuildStatus = "Custom build disabled";
+    [ObservableProperty] private string aiProvider = "Ollama";
+    [ObservableProperty] private string aiEndpoint = "http://localhost:11434";
+    [ObservableProperty] private string aiModel = string.Empty;
+    [ObservableProperty] private string aiApiKey = string.Empty;
+    public bool IsApiKeyProvider => string.Equals(AiProvider, "ApiKey", StringComparison.OrdinalIgnoreCase);
 
     public SetupWizardViewModel(LoggerService logger,
         DeviceManagerService deviceManager,
@@ -124,6 +140,7 @@ public partial class SetupWizardViewModel : ViewModelBase
 
         _state = _wizardStateService.Load();
         ApplyState(_state);
+        ApplyFixedPinoutDefaults();
 
         UpdateStepText();
         UpdateWiringSummary();
@@ -133,12 +150,6 @@ public partial class SetupWizardViewModel : ViewModelBase
     [RelayCommand]
     private async Task BuildCustomFirmwareAsync()
     {
-        if (!UseCustomBuild)
-        {
-            CustomBuildStatus = "Enable custom build first.";
-            return;
-        }
-
         IsBusy = true;
         CustomBuildStatus = "Building custom firmware...";
         var wiring = BuildWiringConfig();
@@ -189,11 +200,7 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     private void LoadOptions()
     {
-        Ports.Clear();
-        foreach (var port in _deviceManager.ScanPorts())
-        {
-            Ports.Add(port);
-        }
+        RefreshPorts();
 
         FirmwareOptions.Clear();
         foreach (var hex in _library.LoadLibrary())
@@ -207,8 +214,20 @@ public partial class SetupWizardViewModel : ViewModelBase
             Presets.Add(p);
         }
 
-        SelectedFirmware = FirmwareOptions.FirstOrDefault(f => f.Name.Contains("v250", StringComparison.OrdinalIgnoreCase)) ?? FirmwareOptions.FirstOrDefault();
+        SelectedFirmware = FirmwareOptions.FirstOrDefault(f => f.Name.StartsWith("Recommended", StringComparison.OrdinalIgnoreCase))
+                           ?? FirmwareOptions.FirstOrDefault(f => f.Name.Contains("v250", StringComparison.OrdinalIgnoreCase))
+                           ?? FirmwareOptions.FirstOrDefault();
+        SelectedFirmware = _library.GetRecommended() ?? SelectedFirmware;
         SelectedPreset = Presets.FirstOrDefault();
+    }
+
+    private void RefreshPorts()
+    {
+        Ports.Clear();
+        foreach (var port in _deviceManager.ScanPorts())
+        {
+            Ports.Add(port);
+        }
     }
 
     private void LoadWiringOptions()
@@ -224,6 +243,10 @@ public partial class SetupWizardViewModel : ViewModelBase
         MotorTerminals.Clear();
         MotorTerminals.Add("M+");
         MotorTerminals.Add("M-");
+
+        AiProviderOptions.Clear();
+        AiProviderOptions.Add("Ollama");
+        AiProviderOptions.Add("ApiKey");
     }
 
     private void ApplyState(WizardState state)
@@ -232,13 +255,17 @@ public partial class SetupWizardViewModel : ViewModelBase
         SelectedPort = state.SelectedPort;
         SelectedFirmware = FirmwareOptions.FirstOrDefault(f => f.Path == state.SelectedFirmwarePath) ?? SelectedFirmware;
         UseCustomBuild = state.UseCustomBuild;
+        AiProvider = string.IsNullOrWhiteSpace(_appSettings.AiProvider) ? "Ollama" : _appSettings.AiProvider;
+        AiEndpoint = string.IsNullOrWhiteSpace(_appSettings.AiEndpoint) ? "http://localhost:11434" : _appSettings.AiEndpoint!;
+        AiModel = _appSettings.AiModel ?? string.Empty;
+        AiApiKey = _appSettings.AiApiKey ?? string.Empty;
 
         var w = state.Wiring ?? new WiringConfig();
-        RpwmPin = string.IsNullOrWhiteSpace(w.RpwmPin) ? "D9" : w.RpwmPin;
-        LpwmPin = string.IsNullOrWhiteSpace(w.LpwmPin) ? "D10" : w.LpwmPin;
-        REnPin = string.IsNullOrWhiteSpace(w.REnPin) ? "D7" : w.REnPin;
-        LEnPin = string.IsNullOrWhiteSpace(w.LEnPin) ? "D8" : w.LEnPin;
-        UseEnablePins = w.UseEnablePins || (string.IsNullOrWhiteSpace(w.REnPin) && string.IsNullOrWhiteSpace(w.LEnPin));
+        RpwmPin = string.IsNullOrWhiteSpace(w.RpwmPin) ? "D10" : w.RpwmPin;
+        LpwmPin = string.IsNullOrWhiteSpace(w.LpwmPin) ? "D9" : w.LpwmPin;
+        REnPin = w.REnPin;
+        LEnPin = w.LEnPin;
+        UseEnablePins = w.UseEnablePins;
         EncoderAPin = string.IsNullOrWhiteSpace(w.EncoderAPin) ? "D2" : w.EncoderAPin;
         EncoderBPin = string.IsNullOrWhiteSpace(w.EncoderBPin) ? "D3" : w.EncoderBPin;
         EStopPin = w.EStopPin;
@@ -246,10 +273,10 @@ public partial class SetupWizardViewModel : ViewModelBase
         Button2Pin = w.Button2Pin;
         ShifterXPin = w.ShifterXPin;
         ShifterYPin = w.ShifterYPin;
-        HasPedals = w.HasPedals || (string.IsNullOrWhiteSpace(w.ThrottlePin) && string.IsNullOrWhiteSpace(w.BrakePin) && string.IsNullOrWhiteSpace(w.ClutchPin));
-        ThrottlePin = string.IsNullOrWhiteSpace(w.ThrottlePin) ? "A0" : w.ThrottlePin;
-        BrakePin = string.IsNullOrWhiteSpace(w.BrakePin) ? "A1" : w.BrakePin;
-        ClutchPin = string.IsNullOrWhiteSpace(w.ClutchPin) ? "A2" : w.ClutchPin;
+        HasPedals = w.HasPedals || !string.IsNullOrWhiteSpace(w.ThrottlePin) || !string.IsNullOrWhiteSpace(w.BrakePin) || !string.IsNullOrWhiteSpace(w.ClutchPin);
+        ThrottlePin = w.ThrottlePin;
+        BrakePin = w.BrakePin;
+        ClutchPin = w.ClutchPin;
         PwmMode = string.IsNullOrWhiteSpace(w.PwmMode) ? "PWM+-" : w.PwmMode;
         LogicVoltage = string.IsNullOrWhiteSpace(w.LogicVoltage) ? "5V" : w.LogicVoltage;
         CommonGround = w.CommonGround;
@@ -257,6 +284,39 @@ public partial class SetupWizardViewModel : ViewModelBase
         MotorMinusTerminal = string.IsNullOrWhiteSpace(w.MotorMinusTerminal) ? "M-" : w.MotorMinusTerminal;
         LogicVccConnected = w.LogicVccConnected;
         LogicGndConnected = w.LogicGndConnected;
+
+        // Migrate legacy wizard defaults to the current steering-only baseline.
+        if (IsLegacyDefaultMapping())
+        {
+            UseMyWheelPreset();
+        }
+    }
+
+    private void ApplyFixedPinoutDefaults()
+    {
+        if (!IsPinMappingLocked)
+        {
+            return;
+        }
+
+        // Fixed known-good default wiring:
+        // D10 -> RPWM, D9 -> LPWM, D2/D3 encoder, EN tied to 5V, steering-only (no pedals).
+        RpwmPin = "D10";
+        LpwmPin = "D9";
+        REnPin = null;
+        LEnPin = null;
+        UseEnablePins = false;
+        EncoderAPin = "D2";
+        EncoderBPin = "D3";
+        HasPedals = false;
+        ThrottlePin = null;
+        BrakePin = null;
+        ClutchPin = null;
+        PwmMode = "PWM+-";
+        LogicVoltage = "5V";
+        CommonGround = true;
+        LogicVccConnected = true;
+        LogicGndConnected = true;
     }
 
     private void SaveState()
@@ -282,6 +342,10 @@ public partial class SetupWizardViewModel : ViewModelBase
         {
             _appSettings.LastFirmwareHex = SelectedFirmware.Path;
         }
+        _appSettings.AiProvider = AiProvider;
+        _appSettings.AiEndpoint = AiEndpoint;
+        _appSettings.AiModel = AiModel;
+        _appSettings.AiApiKey = AiApiKey;
         _settingsService.Save(_appSettings);
     }
 
@@ -324,11 +388,27 @@ public partial class SetupWizardViewModel : ViewModelBase
     [RelayCommand]
     private async Task DetectDeviceAsync()
     {
+        RefreshPorts();
+
+        if (!string.IsNullOrWhiteSpace(SelectedPort) &&
+            Ports.Contains(SelectedPort, StringComparer.OrdinalIgnoreCase))
+        {
+            WizardHint = $"Using selected port {SelectedPort}.";
+            SaveState();
+            return;
+        }
+
         var detected = await _deviceManager.AutoDetectPortAsync();
         if (!string.IsNullOrWhiteSpace(detected))
         {
             SelectedPort = detected;
             WizardHint = $"Detected device on {detected}.";
+            SaveState();
+        }
+        else if (Ports.Count == 1)
+        {
+            SelectedPort = Ports[0];
+            WizardHint = $"Only one COM port found, using {SelectedPort}.";
             SaveState();
         }
         else
@@ -340,10 +420,24 @@ public partial class SetupWizardViewModel : ViewModelBase
     [RelayCommand]
     private async Task FlashFirmwareAsync()
     {
-        if (SelectedFirmware == null || string.IsNullOrWhiteSpace(SelectedPort))
+        if (string.IsNullOrWhiteSpace(SelectedPort) || !Ports.Contains(SelectedPort, StringComparer.OrdinalIgnoreCase))
         {
-            WizardHint = "Select firmware and COM port first.";
-            return;
+            await DetectDeviceAsync();
+            if (string.IsNullOrWhiteSpace(SelectedPort) || !Ports.Contains(SelectedPort, StringComparer.OrdinalIgnoreCase))
+            {
+                WizardHint = "Select firmware and COM port first.";
+                return;
+            }
+        }
+
+        if (SelectedFirmware == null && !_appSettings.SendAsInoMode)
+        {
+            SelectedFirmware = _library.GetRecommended() ?? FirmwareOptions.FirstOrDefault();
+            if (SelectedFirmware == null)
+            {
+                WizardHint = "No firmware HEX found in library.";
+                return;
+            }
         }
         if (_deviceState.IsDemoMode)
         {
@@ -353,11 +447,75 @@ public partial class SetupWizardViewModel : ViewModelBase
 
         FlashLog = string.Empty;
         IsBusy = true;
-        var progress = new Progress<string>(line => FlashLog += line + "\n");
-        var result = await _flasher.FlashWithRetryAsync(SelectedFirmware.Path, SelectedPort, progress, CancellationToken.None);
-        IsBusy = false;
+        var hexPath = SelectedFirmware?.Path;
+        var customUsed = false;
 
-        WizardHint = result.Success ? "Flash complete. Continue to calibration." : $"{result.UserMessage} {result.SuggestedAction}";
+        try
+        {
+            var wiring = BuildWiringConfig();
+            var requiresPinoutBuild = _appSettings.SendAsInoMode || _appSettings.ForcePinoutBuild || !wiring.IsDefaultLeonardo();
+            if (requiresPinoutBuild)
+            {
+                CustomBuildStatus = _appSettings.SendAsInoMode
+                    ? "Building from .ino source using your pinout..."
+                    : "Building pinout-specific firmware...";
+                var build = await _builder.BuildAsync(wiring, CancellationToken.None);
+                CustomBuildStatus = build.Message;
+
+                if (!build.Success || string.IsNullOrWhiteSpace(build.HexPath))
+                {
+                    if (!string.IsNullOrWhiteSpace(build.OutputLog))
+                    {
+                        FlashLog += build.OutputLog + "\n";
+                    }
+                    WizardHint = $"Custom build failed: {build.Message}";
+                    return;
+                }
+
+                hexPath = build.HexPath;
+                customUsed = true;
+                FlashLog += $"Using custom HEX for selected pinout: {hexPath}\n";
+
+                var existing = FirmwareOptions.FirstOrDefault(f => string.Equals(f.Path, hexPath, StringComparison.OrdinalIgnoreCase));
+                if (existing == null)
+                {
+                    existing = new FirmwareHexInfo
+                    {
+                        Name = $"Custom Pinout {DateTime.Now:HH:mm:ss}",
+                        Path = hexPath,
+                        Notes = "Auto-built from wizard wiring"
+                    };
+                    FirmwareOptions.Insert(0, existing);
+                }
+                SelectedFirmware = existing;
+            }
+
+            if (string.IsNullOrWhiteSpace(hexPath))
+            {
+                WizardHint = "No HEX selected.";
+                return;
+            }
+
+            var progress = new Progress<string>(line => FlashLog += line + "\n");
+            var result = await _flasher.FlashWithRetryAsync(hexPath, SelectedPort, progress, CancellationToken.None);
+
+            // Fallback: if reset/bootloader handshake failed, try direct flash once.
+            if (!result.Success && result.ErrorType == FlashErrorType.BootloaderNotDetected)
+            {
+                FlashLog += "Bootloader detect failed; trying direct flash on selected COM...\n";
+                result = await _flasher.FlashWithRetryAsync(hexPath, SelectedPort, progress, CancellationToken.None, skipReset: true);
+            }
+
+            WizardHint = result.Success
+                ? customUsed
+                    ? "Flash complete. Pinout-specific custom firmware is now on the wheel."
+                    : "Flash complete. Continue to calibration."
+                : $"{result.UserMessage} {result.SuggestedAction}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
@@ -467,22 +625,95 @@ public partial class SetupWizardViewModel : ViewModelBase
     [RelayCommand]
     private void UseMyWheelPreset()
     {
-        RpwmPin = "D9";
-        LpwmPin = "D10";
-        REnPin = "D7";
-        LEnPin = "D8";
-        UseEnablePins = true;
-        EncoderAPin = "D2";
-        EncoderBPin = "D3";
-        PwmMode = "PWM+-";
-        LogicVoltage = "5V";
-        CommonGround = true;
-        HasPedals = true;
-        ThrottlePin = "A0";
-        BrakePin = "A1";
-        ClutchPin = "A2";
+        ApplyFixedPinoutDefaults();
         UpdateWiringSummary();
-        WizardHint = "Loaded My Wheel developer preset.";
+        WizardHint = "Loaded steering-only default preset (RPWM D10, LPWM D9, Encoder D2/D3, EN tied to 5V).";
+    }
+
+    [RelayCommand]
+    private async Task StartGamePresetsAsync()
+    {
+        if (_deviceState.CurrentDevice == null && !_deviceState.IsDemoMode)
+        {
+            GamePresetStatus = "Connect the wheel first.";
+            WizardHint = GamePresetStatus;
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var preset = PresetLibraryService.GetGamePresets()
+                             .FirstOrDefault(p => p.Name.Contains("BeamNG", StringComparison.OrdinalIgnoreCase))
+                         ?? PresetLibraryService.GetWheelPresets().FirstOrDefault();
+            if (preset == null)
+            {
+                GamePresetStatus = "No game preset found.";
+                WizardHint = GamePresetStatus;
+                return;
+            }
+
+            if (_deviceState.IsDemoMode)
+            {
+                GamePresetStatus = $"Demo mode: would apply {preset.Name}.";
+                WizardHint = GamePresetStatus;
+                return;
+            }
+
+            if (!_deviceState.CurrentDevice!.SupportsSerialConfig)
+            {
+                GamePresetStatus = "Current firmware does not support serial tuning commands.";
+                WizardHint = GamePresetStatus;
+                return;
+            }
+
+            await _settings.ApplyConfigAsync(preset.Config, CancellationToken.None);
+            _tuningState.UpdateConfig(preset.Config);
+
+            var motorCheck = await _calibration.RunMotorRotationCalibrationAsync(CancellationToken.None);
+            if (!motorCheck.Success)
+            {
+                GamePresetStatus = $"Preset applied, but motor/encoder check failed: {motorCheck.Message}";
+                WizardHint = GamePresetStatus;
+                return;
+            }
+
+            if (_settings.CanSaveToWheel())
+            {
+                await _settings.SaveToWheelAsync(CancellationToken.None);
+            }
+            else
+            {
+                _settings.SaveToPc(new Profile
+                {
+                    Name = $"Game Ready {DateTime.Now:yyyyMMdd-HHmm}",
+                    Notes = $"Auto generated from Start Game Presets ({preset.Name})",
+                    Config = preset.Config,
+                    FirmwareVersion = _deviceState.CurrentDevice?.FirmwareVersion
+                });
+            }
+
+            _snapshots.CreateSnapshot(new SnapshotEntry
+            {
+                Kind = SnapshotKind.ApplyProfile,
+                Label = $"Game ready ({preset.Name})",
+                Config = preset.Config,
+                FirmwareVersion = _deviceState.CurrentDevice?.FirmwareVersion,
+                Wiring = BuildWiringConfig()
+            });
+
+            GamePresetStatus = $"Wheel ready for gameplay: {preset.Name}. Encoder check OK.";
+            WizardHint = GamePresetStatus;
+        }
+        catch (Exception ex)
+        {
+            GamePresetStatus = $"Game preset start failed: {ex.Message}";
+            WizardHint = GamePresetStatus;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private void UpdateStepText()
@@ -534,13 +765,18 @@ public partial class SetupWizardViewModel : ViewModelBase
 
     private void UpdateWiringSummary()
     {
+        if (_suspendSummaryRefresh)
+        {
+            return;
+        }
+
         // Human-readable wiring table used in UI and troubleshooting exports.
         var sb = new StringBuilder();
         sb.AppendLine("Arduino Leonardo Wiring Summary");
         sb.AppendLine($"RPWM: {RpwmPin}");
         sb.AppendLine($"LPWM: {LpwmPin}");
-        sb.AppendLine($"R_EN: {REnPin}");
-        sb.AppendLine($"L_EN: {LEnPin}");
+        sb.AppendLine($"R_EN: {(UseEnablePins ? (string.IsNullOrWhiteSpace(REnPin) ? "UNSET" : REnPin) : "Tied to 5V")}");
+        sb.AppendLine($"L_EN: {(UseEnablePins ? (string.IsNullOrWhiteSpace(LEnPin) ? "UNSET" : LEnPin) : "Tied to 5V")}");
         sb.AppendLine($"Encoder A: {EncoderAPin}");
         sb.AppendLine($"Encoder B: {EncoderBPin}");
         sb.AppendLine($"PWM Mode: {PwmMode}");
@@ -554,6 +790,10 @@ public partial class SetupWizardViewModel : ViewModelBase
             sb.AppendLine($"  Throttle: {ThrottlePin}");
             sb.AppendLine($"  Brake: {BrakePin}");
             sb.AppendLine($"  Clutch: {ClutchPin}");
+        }
+        else
+        {
+            sb.AppendLine("Pedals: Not used (steering wheel only)");
         }
         WiringSummary = sb.ToString();
         ValidateWiring();
@@ -625,14 +865,320 @@ public partial class SetupWizardViewModel : ViewModelBase
         }
 
         var wiring = BuildWiringConfig();
-        if (!UseCustomBuild && !wiring.IsDefaultLeonardo())
-        {
-            // With precompiled HEX workflow, custom pinouts need matching build support.
-            WiringWarnings.Add("Wiring does not match default Leonardo pinout. Use custom build or select a matching HEX.");
-        }
-
         WiringValid = WiringWarnings.Count == 0;
         return WiringValid;
+    }
+
+    /// <summary>
+    /// Applies wiring/pin values from free-form text like:
+    /// "rpwm d9, lpwm d10, encoder a d2, encoder b d3, throttle a0".
+    /// Used by the AI sidebar to modify wizard fields directly.
+    /// </summary>
+    public (bool Applied, string Summary) ApplyNaturalLanguageConfig(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return (false, "No input provided.");
+        }
+
+        var updates = new List<string>();
+        var warnings = new List<string>();
+
+        _suspendSummaryRefresh = true;
+        try
+        {
+            foreach (Match match in PinAssignmentRegex.Matches(text))
+            {
+                var key = NormalizeKey(match.Groups["key"].Value);
+                var pin = NormalizePin(match.Groups["pin"].Value);
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(pin))
+                {
+                    continue;
+                }
+
+                if (!TryApplyPin(key, pin, updates, warnings))
+                {
+                    continue;
+                }
+            }
+
+            // Mode/safety toggles from natural language.
+            if (Regex.IsMatch(text, @"\b(disable|off|no)\s+enable\s+pins?\b", RegexOptions.IgnoreCase))
+            {
+                UseEnablePins = false;
+                updates.Add("Enable pins OFF");
+            }
+            else if (Regex.IsMatch(text, @"\b(enable|use|on)\s+enable\s+pins?\b", RegexOptions.IgnoreCase))
+            {
+                UseEnablePins = true;
+                updates.Add("Enable pins ON");
+            }
+
+            if (Regex.IsMatch(text, @"\bpwm\+/?-\b|\bpwm\s*\+\s*-\b", RegexOptions.IgnoreCase))
+            {
+                PwmMode = "PWM+-";
+                updates.Add("PWM mode PWM+-");
+            }
+            else if (Regex.IsMatch(text, @"\bpwm\+dir\b|\bpwm\s*\+\s*dir\b", RegexOptions.IgnoreCase))
+            {
+                PwmMode = "PWM+DIR";
+                updates.Add("PWM mode PWM+DIR");
+            }
+
+            if (Regex.IsMatch(text, @"\b3\.?3v\b", RegexOptions.IgnoreCase))
+            {
+                LogicVoltage = "3.3V";
+                updates.Add("Logic 3.3V");
+            }
+            else if (Regex.IsMatch(text, @"\b5v\b", RegexOptions.IgnoreCase))
+            {
+                LogicVoltage = "5V";
+                updates.Add("Logic 5V");
+            }
+
+            if (Regex.IsMatch(text, @"\b(no|without)\s+common\s+ground\b", RegexOptions.IgnoreCase))
+            {
+                CommonGround = false;
+                updates.Add("Common ground OFF");
+            }
+            else if (Regex.IsMatch(text, @"\b(common|shared)\s+ground\b", RegexOptions.IgnoreCase))
+            {
+                CommonGround = true;
+                updates.Add("Common ground ON");
+            }
+
+            if (Regex.IsMatch(text, @"\b(no|without)\s+pedals?\b", RegexOptions.IgnoreCase))
+            {
+                HasPedals = false;
+                ThrottlePin = null;
+                BrakePin = null;
+                ClutchPin = null;
+                updates.Add("Pedals OFF");
+            }
+            else if (Regex.IsMatch(text, @"\b(with|enable)\s+pedals?\b", RegexOptions.IgnoreCase))
+            {
+                HasPedals = true;
+                updates.Add("Pedals ON");
+            }
+        }
+        finally
+        {
+            _suspendSummaryRefresh = false;
+        }
+
+        UpdateWiringSummary();
+
+        if (updates.Count == 0 && warnings.Count == 0)
+        {
+            return (false, "No recognized wiring changes found. Example: RPWM D10, LPWM D9, Encoder A D2, Encoder B D3.");
+        }
+
+        var summary = updates.Count > 0
+            ? $"Applied: {string.Join("; ", updates)}."
+            : "No valid updates applied.";
+        if (warnings.Count > 0)
+        {
+            summary += $" Warnings: {string.Join(" | ", warnings)}";
+        }
+
+        WizardHint = summary;
+        return (updates.Count > 0, summary);
+    }
+
+    private static string NormalizeKey(string raw)
+    {
+        var key = raw.Trim().ToLowerInvariant();
+        return key switch
+        {
+            "rpwm" => "rpwm",
+            "lpwm" => "lpwm",
+            "r_en" or "r en" or "ren" => "ren",
+            "l_en" or "l en" or "len" => "len",
+            "encoder a" => "enca",
+            "encoder b" => "encb",
+            "e-stop" or "estop" => "estop",
+            "button 1" => "btn1",
+            "button 2" => "btn2",
+            "shifter x" => "shiftx",
+            "shifter y" => "shifty",
+            "throttle" => "throttle",
+            "brake" => "brake",
+            "clutch" => "clutch",
+            _ => string.Empty
+        };
+    }
+
+    private static string NormalizePin(string raw)
+    {
+        var value = raw.Trim().ToUpperInvariant();
+        if (!value.StartsWith("D") && !value.StartsWith("A"))
+        {
+            return string.Empty;
+        }
+
+        return value;
+    }
+
+    private bool TryApplyPin(string key, string pin, List<string> updates, List<string> warnings)
+    {
+        bool IsValid(ObservableCollection<string> options) => options.Contains(pin);
+
+        switch (key)
+        {
+            case "rpwm":
+                if (!IsValid(PwmPins))
+                {
+                    warnings.Add($"RPWM pin {pin} is not PWM-capable.");
+                    return false;
+                }
+                RpwmPin = pin;
+                updates.Add($"RPWM={pin}");
+                return true;
+
+            case "lpwm":
+                if (PwmMode == "PWM+-" && !IsValid(PwmPins))
+                {
+                    warnings.Add($"LPWM pin {pin} is not PWM-capable for PWM+- mode.");
+                    return false;
+                }
+                LpwmPin = pin;
+                updates.Add($"LPWM={pin}");
+                return true;
+
+            case "ren":
+                if (!IsValid(DigitalPins))
+                {
+                    warnings.Add($"R_EN pin {pin} is invalid.");
+                    return false;
+                }
+                REnPin = pin;
+                updates.Add($"R_EN={pin}");
+                return true;
+
+            case "len":
+                if (!IsValid(DigitalPins))
+                {
+                    warnings.Add($"L_EN pin {pin} is invalid.");
+                    return false;
+                }
+                LEnPin = pin;
+                updates.Add($"L_EN={pin}");
+                return true;
+
+            case "enca":
+                if (!IsValid(InterruptPins))
+                {
+                    warnings.Add($"Encoder A pin {pin} should be interrupt-capable.");
+                }
+                EncoderAPin = pin;
+                updates.Add($"Encoder A={pin}");
+                return true;
+
+            case "encb":
+                if (!IsValid(InterruptPins))
+                {
+                    warnings.Add($"Encoder B pin {pin} should be interrupt-capable.");
+                }
+                EncoderBPin = pin;
+                updates.Add($"Encoder B={pin}");
+                return true;
+
+            case "estop":
+                if (!IsValid(DigitalPins))
+                {
+                    warnings.Add($"E-Stop pin {pin} is invalid.");
+                    return false;
+                }
+                EStopPin = pin;
+                updates.Add($"E-Stop={pin}");
+                return true;
+
+            case "btn1":
+                if (!IsValid(DigitalPins))
+                {
+                    warnings.Add($"Button 1 pin {pin} is invalid.");
+                    return false;
+                }
+                Button1Pin = pin;
+                updates.Add($"Button1={pin}");
+                return true;
+
+            case "btn2":
+                if (!IsValid(DigitalPins))
+                {
+                    warnings.Add($"Button 2 pin {pin} is invalid.");
+                    return false;
+                }
+                Button2Pin = pin;
+                updates.Add($"Button2={pin}");
+                return true;
+
+            case "shiftx":
+                if (!IsValid(AnalogPins))
+                {
+                    warnings.Add($"Shifter X pin {pin} should be analog.");
+                    return false;
+                }
+                ShifterXPin = pin;
+                updates.Add($"Shifter X={pin}");
+                return true;
+
+            case "shifty":
+                if (!IsValid(AnalogPins))
+                {
+                    warnings.Add($"Shifter Y pin {pin} should be analog.");
+                    return false;
+                }
+                ShifterYPin = pin;
+                updates.Add($"Shifter Y={pin}");
+                return true;
+
+            case "throttle":
+                if (!IsValid(AnalogPins))
+                {
+                    warnings.Add($"Throttle pin {pin} should be analog.");
+                    return false;
+                }
+                ThrottlePin = pin;
+                updates.Add($"Throttle={pin}");
+                return true;
+
+            case "brake":
+                if (!IsValid(AnalogPins))
+                {
+                    warnings.Add($"Brake pin {pin} should be analog.");
+                    return false;
+                }
+                BrakePin = pin;
+                updates.Add($"Brake={pin}");
+                return true;
+
+            case "clutch":
+                if (!IsValid(AnalogPins))
+                {
+                    warnings.Add($"Clutch pin {pin} should be analog.");
+                    return false;
+                }
+                ClutchPin = pin;
+                updates.Add($"Clutch={pin}");
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsLegacyDefaultMapping()
+    {
+        return string.Equals(RpwmPin, "D9", StringComparison.OrdinalIgnoreCase)
+               && string.Equals(LpwmPin, "D10", StringComparison.OrdinalIgnoreCase)
+               && string.Equals(REnPin, "D7", StringComparison.OrdinalIgnoreCase)
+               && string.Equals(LEnPin, "D8", StringComparison.OrdinalIgnoreCase)
+               && string.Equals(EncoderAPin, "D2", StringComparison.OrdinalIgnoreCase)
+               && string.Equals(EncoderBPin, "D3", StringComparison.OrdinalIgnoreCase)
+               && HasPedals
+               && string.Equals(ThrottlePin, "A0", StringComparison.OrdinalIgnoreCase)
+               && string.Equals(BrakePin, "A1", StringComparison.OrdinalIgnoreCase)
+               && string.Equals(ClutchPin, "A2", StringComparison.OrdinalIgnoreCase);
     }
 
     partial void OnRpwmPinChanged(string? value) => UpdateWiringSummary();
@@ -653,10 +1199,34 @@ public partial class SetupWizardViewModel : ViewModelBase
     partial void OnPwmModeChanged(string value) => UpdateWiringSummary();
     partial void OnLogicVoltageChanged(string value) => UpdateWiringSummary();
     partial void OnCommonGroundChanged(bool value) => UpdateWiringSummary();
-    partial void OnHasPedalsChanged(bool value) => UpdateWiringSummary();
+    partial void OnHasPedalsChanged(bool value)
+    {
+        if (!value)
+        {
+            ThrottlePin = null;
+            BrakePin = null;
+            ClutchPin = null;
+        }
+        else
+        {
+            ThrottlePin ??= "A0";
+            BrakePin ??= "A1";
+            ClutchPin ??= "A2";
+        }
+
+        UpdateWiringSummary();
+    }
     partial void OnLogicVccConnectedChanged(bool value) => UpdateWiringSummary();
     partial void OnLogicGndConnectedChanged(bool value) => UpdateWiringSummary();
     partial void OnSelectedFirmwareChanged(FirmwareHexInfo? value) => SaveState();
     partial void OnSelectedPortChanged(string? value) => SaveState();
     partial void OnUseCustomBuildChanged(bool value) => SaveState();
+    partial void OnAiProviderChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsApiKeyProvider));
+        SaveState();
+    }
+    partial void OnAiEndpointChanged(string value) => SaveState();
+    partial void OnAiModelChanged(string value) => SaveState();
+    partial void OnAiApiKeyChanged(string value) => SaveState();
 }

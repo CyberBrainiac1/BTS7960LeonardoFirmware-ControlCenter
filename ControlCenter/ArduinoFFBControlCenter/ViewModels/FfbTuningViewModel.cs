@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -12,6 +13,10 @@ namespace ArduinoFFBControlCenter.ViewModels;
 
 public partial class FfbTuningViewModel : ViewModelBase
 {
+    private static readonly Regex ValuePattern = new(
+        @"(?<key>strength|overall|general|damping|damper|friction|inertia|spring|constant|periodic|centering|center|endstop|stop|min\s*torque|minforce|steering\s*scale|slew|smoothing|notch|lowpass)\s*(?:=|:|to|is)?\s*(?<val>-?\d{1,3})",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
     private readonly LoggerService _logger;
     private readonly DeviceSettingsService _settings;
     private readonly DeviceStateService _deviceState;
@@ -563,6 +568,128 @@ public partial class FfbTuningViewModel : ViewModelBase
         baseCfg.StopGain = StopGain;
         baseCfg.MinTorque = MinTorque;
         return baseCfg;
+    }
+
+    /// <summary>
+    /// Applies tuning values from natural language. Example:
+    /// "strength 95 damping 40 friction 25 steering scale 110".
+    /// </summary>
+    public (bool Applied, string Summary) ApplyNaturalLanguageTuning(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return (false, "No tuning text provided.");
+        }
+
+        var updates = new List<string>();
+
+        if (Regex.IsMatch(text, @"\bbts\b|\bdefault\b", RegexOptions.IgnoreCase))
+        {
+            ApplyPresetBts();
+            updates.Add("Preset=BTS default");
+        }
+        else if (Regex.IsMatch(text, @"\bcomfort\b", RegexOptions.IgnoreCase))
+        {
+            ApplyPresetComfort();
+            updates.Add("Preset=Comfort");
+        }
+        else if (Regex.IsMatch(text, @"\bdrift\b", RegexOptions.IgnoreCase))
+        {
+            ApplyPresetDrift();
+            updates.Add("Preset=Drift");
+        }
+        else if (Regex.IsMatch(text, @"\brace\b", RegexOptions.IgnoreCase))
+        {
+            ApplyPresetRace();
+            updates.Add("Preset=Race");
+        }
+
+        foreach (Match match in ValuePattern.Matches(text))
+        {
+            var key = match.Groups["key"].Value.Trim().ToLowerInvariant();
+            if (!int.TryParse(match.Groups["val"].Value, out var value))
+            {
+                continue;
+            }
+
+            switch (key)
+            {
+                case "strength":
+                case "overall":
+                case "general":
+                    GeneralGain = Math.Clamp(value, 0, StrengthMax);
+                    updates.Add($"Strength={GeneralGain}");
+                    break;
+                case "damping":
+                case "damper":
+                    DamperGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Damper={DamperGain}");
+                    break;
+                case "friction":
+                    FrictionGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Friction={FrictionGain}");
+                    break;
+                case "inertia":
+                    InertiaGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Inertia={InertiaGain}");
+                    break;
+                case "spring":
+                    SpringGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Spring={SpringGain}");
+                    break;
+                case "constant":
+                    ConstantGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Constant={ConstantGain}");
+                    break;
+                case "periodic":
+                    PeriodicGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Periodic={PeriodicGain}");
+                    break;
+                case "centering":
+                case "center":
+                    CenterGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Center={CenterGain}");
+                    break;
+                case "endstop":
+                case "stop":
+                    StopGain = Math.Clamp(value, 0, 200);
+                    updates.Add($"Endstop={StopGain}");
+                    break;
+                case "min torque":
+                case "minforce":
+                    MinTorque = Math.Clamp(value, 0, 100);
+                    updates.Add($"MinTorque={MinTorque}");
+                    break;
+                case "steering scale":
+                    SteeringScale = Math.Clamp(value, 0, 200);
+                    updates.Add($"SteeringScale={SteeringScale}");
+                    break;
+                case "slew":
+                    SlewRate = Math.Clamp(value, 0, 100);
+                    updates.Add($"Slew={SlewRate}");
+                    break;
+                case "smoothing":
+                    Smoothing = Math.Clamp(value, 0, 100);
+                    updates.Add($"Smoothing={Smoothing}");
+                    break;
+                case "notch":
+                    NotchFilter = Math.Clamp(value, 0, 100);
+                    updates.Add($"Notch={NotchFilter}");
+                    break;
+                case "lowpass":
+                    LowPassFilter = Math.Clamp(value, 0, 100);
+                    updates.Add($"LowPass={LowPassFilter}");
+                    break;
+            }
+        }
+
+        if (updates.Count == 0)
+        {
+            return (false, "No recognized tuning commands found.");
+        }
+
+        UpdateTuningStateFromCurrent();
+        return (true, $"Applied tuning: {string.Join("; ", updates)}.");
     }
 }
 

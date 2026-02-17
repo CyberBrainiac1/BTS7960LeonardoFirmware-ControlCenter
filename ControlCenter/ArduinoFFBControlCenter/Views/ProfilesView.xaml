@@ -49,8 +49,8 @@
                 <StackPanel>
                     <TextBlock Text="Compare Profiles" FontSize="16" FontWeight="SemiBold" />
                     <StackPanel Orientation="Horizontal" helpers:PanelSpacing.Spacing="8" Margin="0,8,0,0">
-                        <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding CompareLeft}" DisplayMemberPath="Name" Width="160" />
-                        <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding CompareRight}" DisplayMemberPath="Name" Width="160" />
+                        <ComboBox Style="{StaticResource FloatingComboBox}" ItemsSource="{Binding Profiles}" SelectedItem="{Binding CompareLeft}" DisplayMemberPath="Name" Width="160" />
+                        <ComboBox Style="{StaticResource FloatingComboBox}" ItemsSource="{Binding Profiles}" SelectedItem="{Binding CompareRight}" DisplayMemberPath="Name" Width="160" />
                         <Button Content="Compare" Command="{Binding CompareSelectedCommand}" />
                     </StackPanel>
                     <ListBox ItemsSource="{Binding DiffLines}" Height="180" Margin="0,8,0,0" />
@@ -60,7 +60,7 @@
             <Border Grid.Column="1" Grid.Row="1" Style="{StaticResource Card}" Margin="16,16,0,0">
                 <StackPanel>
                     <TextBlock Text="One-click Game Presets" FontSize="16" FontWeight="SemiBold" />
-                    <ComboBox ItemsSource="{Binding GamePresets}" SelectedItem="{Binding SelectedGamePreset}" DisplayMemberPath="Name" Margin="0,8,0,0" />
+                    <ComboBox Style="{StaticResource FloatingComboBox}" ItemsSource="{Binding GamePresets}" SelectedItem="{Binding SelectedGamePreset}" DisplayMemberPath="Name" Margin="0,8,0,0" />
                     <Button Content="Apply Preset" Command="{Binding ApplyGamePresetCommand}" Style="{StaticResource AccentButton}" Margin="0,8,0,0" IsEnabled="{Binding CanUseSerialConfig}" />
                     <TextBlock Text="These are community baselines, not official." Foreground="{StaticResource MutedText}" Margin="0,6,0,0" />
                 </StackPanel>
@@ -112,5 +112,6 @@
         </Grid>
     </ScrollViewer>
 </UserControl>
+
 
 
